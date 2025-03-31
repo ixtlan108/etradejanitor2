@@ -2,12 +2,25 @@
   :version "0.9.0"
   :author ""
   :license ""
-  :depends-on ("str" "cl-csv" "postmodern" "local-time")
+  :depends-on
+    ("str"
+    "cl-csv"
+    "postmodern"
+    "local-time"
+    "parse-number"
+    "trivia"
+    "log4cl")
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")
                    (:file "janitor/types")
-                   (:file "janitor/main" :depends-on ("janitor/common"))
+                   (:file "janitor/yahoo" :depends-on ("janitor/common"))
+                   (:file "janitor/main"
+                      :depends-on
+                        ("janitor/common"
+                        "janitor/db"
+                        "janitor/parser"))
+                   (:file "janitor/db" :depends-on ("janitor/common"))
                    (:file "janitor/parser" :depends-on ("janitor/common")))))
   :description ""
   :in-order-to ((test-op (test-op "etradejanitor/tests"))))

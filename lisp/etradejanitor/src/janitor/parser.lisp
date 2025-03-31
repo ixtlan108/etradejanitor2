@@ -2,55 +2,60 @@
   (:use :cl)
   (:local-nicknames
     (#:com #:janitor/common)
-    (#:sp #:janitor/types))
-  (:import-from :local-time #:timestamp>= #:parse-timestring)
-  (:import-from :janitor/common #:clet #:clet* #:fn))
+    (#:ty #:janitor/types))
+  (:import-from :local-time #:timestamp<)
+  (:import-from :janitor/common
+    #:clet
+    #:clet* #:fn
+    #:*home*)
+  (:export
+    #:parse
+    #:cut-off
+    #:parse-cut-off))
 
 (in-package :janitor/parser)
 
-(defparameter *feed* "/home/rcs/opt/etradejanitor2/feed")
+(defparameter *feed*
+  (format nil "~a/feed" *home*))
 
 (defun feed-csv-name (ticker)
   (format nil "~a/~a.csv" *feed* ticker))
 
 ; Date,Open,High,Low,Close,Volume,Dividends,Stock Splits
 ; 2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0
+; (2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0)
+; ("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")
 
-(defun mk-stockprice (row)
-  row)
-
-(defun csv->time (s)
-  (parse-timestring (nth 0 (str:split " " s))))
-
-;  (clet (dt (loca-time:parse-timestamp (nth 0 row))))
-;    (sp:make-stockprice row))
-
-(defun mk-stockprice-fn (cut-off-date)
+(defun mk-stockprice-fn (ticker-oid cut-off-date)
   (clet (hit nil)
     (fn (row)
-      (clet (price (mk-stockprice row))
+      (clet (price (ty:mk-stockprice ticker-oid row))
         (if hit
           nil
-          (progn
-            (setq hit t) price))))))
+          (clet (cur-dx (ty:s-dx price))
+            (if (timestamp< cur-dx cut-off-date)
+              (progn
+                (setq hit t)
+                nil)
+              price)))))))
 
-(defun cut-off-items (items cut-off-date)
-  (map 'vector #'mk-stockprice items))
+(defun cut-off (items ticker-oid cut-off-date)
+  (clet (fx (mk-stockprice-fn ticker-oid cut-off-date))
+    (remove-if #'null (map 'vector fx items))))
 
+(defun parse (ticker)
+  (clet (csv-name (feed-csv-name ticker))
+    (print csv-name)
+    (if (uiop:file-exists-p csv-name)
+      (nreverse (com:read-csv csv-name))
+      nil)))
 
-; (remove-if #'null items)
-  ; (clet (num-items (length items))
-  ;   (dotimes (i num-items)
-  ;     (clet (sp (mk-stockprice row)))
-  ; items)
+(defun parse-cut-off (ticker cut-off-date)
+  (cut-off (parse ticker) 1 cut-off-date))
 
-(defun parse (ticker cut-off-date)
-  (clet*
-    (items (nreverse (com:read-csv (feed-csv-name ticker)))
-     coi (cut-off-items items cut-off-date))
-    ;(print *feed*)
-    ;(print cut-off-date)
-    coi))
+; (defun parse (ticker cut-off-date)
+;   (clet (items (nreverse (com:read-csv (feed-csv-name ticker))))
+;     (cut-off-items items cut-off-date)))
 
 ; (defvar ixx
 ;   (let ((counter 0))
