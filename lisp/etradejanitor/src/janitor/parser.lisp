@@ -4,7 +4,7 @@
     (#:com #:janitor/common)
     (#:sp #:janitor/types))
   (:import-from :local-time #:timestamp>= #:parse-timestring)
-  (:import-from :janitor/common #:clet #:clet* #:fn))
+  (:import-from :janitor/common #:clet #:clet* #:fn #:partial))
 
 (in-package :janitor/parser)
 
@@ -15,15 +15,18 @@
 
 ; Date,Open,High,Low,Close,Volume,Dividends,Stock Splits
 ; 2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0
-
-(defun mk-stockprice (row)
-  row)
+; (2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0)
+; ("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")
 
 (defun csv->time (s)
   (parse-timestring (nth 0 (str:split " " s))))
 
-;  (clet (dt (loca-time:parse-timestamp (nth 0 row))))
-;    (sp:make-stockprice row))
+(defparameter demo-row
+  '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0"))
+
+(defun mk-stockprice (row)
+  (clet (dx (csv->time (nth 0 row)))
+    (sp:make-stockprice :dx dx)))
 
 (defun mk-stockprice-fn (cut-off-date)
   (clet (hit nil)
@@ -35,7 +38,8 @@
             (setq hit t) price))))))
 
 (defun cut-off-items (items cut-off-date)
-  (map 'vector #'mk-stockprice items))
+  (clet (fx (mk-stockprice-fn cut-off-date))
+    (map 'vector fx items)))
 
 
 ; (remove-if #'null items)

@@ -12,6 +12,6 @@
 
 (in-package :janitor/types)
 
-(defstruct (stockprice (:conc-name s-)) opn hi lo cls vol)
+(defstruct (stockprice (:conc-name s-)) dx opn hi lo cls vol)
 
-(defun demo () (make-stockprice :opn 10 :hi 12 :lo 8 :cls 9 :vol 1000))
+;(defun demo () (make-stockprice :opn 10 :hi 12 :lo 8 :cls 9 :vol 1000))
