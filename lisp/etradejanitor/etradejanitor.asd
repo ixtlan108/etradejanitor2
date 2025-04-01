@@ -2,7 +2,7 @@
   :version "0.9.0"
   :author ""
   :license ""
-  :depends-on ("str" "cl-csv" "postmodern" "local-time")
+  :depends-on ("str" "cl-csv" "postmodern" "local-time" "parse-number")
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")

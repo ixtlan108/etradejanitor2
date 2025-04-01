@@ -2,6 +2,7 @@
   (:use :cl)
   (:import-from :local-time #:timestamp= #:parse-timestring)
   (:import-from :janitor/common #:clet)
+  (:import-from :org.mapcar.parse-number #:parse-number)
   (:export
     #:stockprice
     #:mk-stockprice
@@ -27,16 +28,24 @@
     (equalp (s-vol s1) (s-vol s2))))
 
 (defun csv->time (s)
-  (parse-timestring (nth 0 (str:split " " s))))
+  (parse-timestring (nth 0 (str:split " " s)) ))
 
 (defun mk-stockprice (row)
-  (clet (dx (csv->time (nth 0 row)))
-    (make-stockprice :dx dx)))
+  (clet
+    (dx (csv->time (nth 0 row))
+    opn (parse-number (nth 1 row))
+    hi (parse-number (nth 2 row))
+    lo (parse-number (nth 3 row))
+    cls (parse-number (nth 4 row))
+    vol (parse-number (nth 5 row)))
+    (make-stockprice :dx dx :opn opn :hi hi :lo lo :cls cls :vol vol)))
 
-(defparameter rt1
-  (mk-stockprice
-    '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
+; Date 0,Open 1,High 2,Low 3,Close 4,Volume 5,Dividends,Stock Splits
 
-(defparameter rt2
-  (mk-stockprice
-    '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
+; (defparameter rt1
+;   (mk-stockprice
+;     '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
+
+; (defparameter rt2
+;   (mk-stockprice
+;     '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))

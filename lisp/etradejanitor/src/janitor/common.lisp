@@ -11,7 +11,7 @@
 (in-package :janitor/common)
 
 (defun date (year month day)
-  (local-time:encode-timestamp 0 0 0 0 day month year))
+  (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
 
 (defmacro fn (&rest forms)
   `(lambda ,@forms))
