@@ -10,6 +10,16 @@
 
 (defparameter *feed* "/home/rcs/opt/etradejanitor2/feed")
 
+(defun demo () (postmodern:connect-toplevel))
+
+(defun start-database ()
+  "Start the database connection."
+  (unless *db*
+    (postmodern:connect-toplevel
+                database-name-here your-user-name-here
+                your-password-here "localhost"
+                :port *database-port*)))
+
 (defun feed-csv-name (ticker)
   (format nil "~a/~a.csv" *feed* ticker))
 
@@ -35,6 +45,7 @@
   (clet (fx (mk-stockprice-fn cut-off-date))
     (remove-if #'null (map 'vector fx items))))
 
+;(use-package :postmodern)
 
 ; (remove-if #'null items)
   ; (clet (num-items (length items))
