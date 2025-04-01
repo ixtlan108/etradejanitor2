@@ -4,13 +4,13 @@
     #:clet
     #:clet*
     #:read-csv
-    #:timestamp
+    #:date
     #:fn
     #:partial))
 
 (in-package :janitor/common)
 
-(defun timestamp (year month day)
+(defun date (year month day)
   (local-time:encode-timestamp 0 0 0 0 day month year))
 
 (defmacro fn (&rest forms)

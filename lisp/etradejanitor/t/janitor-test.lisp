@@ -2,12 +2,12 @@
   (:use :cl
         :rove)
   (:import-from :local-time #:parse-timestring)
-  (:import-from :janitor/common #:clet #:clet* #:timestamp)
+  (:import-from :janitor/common #:clet #:clet* #:date)
   (:local-nicknames
     (#:parser #:janitor/parser)))
 
 (in-package :etradejanitor/tests/janitor-test)
-
+; company portal
 (defparameter test-feed "/home/rcs/opt/etradejanitor2/lisp/etradejanitor/t/resources")
 
 (in-package :etradejanitor/tests/janitor-test)

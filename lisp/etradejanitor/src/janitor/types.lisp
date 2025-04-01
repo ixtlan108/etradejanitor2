@@ -3,6 +3,7 @@
   (:export
     #:stockprice
     #:make-stockprice
+    #:s-dx
     #:s-opn
     #:s-hi
     #:s-lo

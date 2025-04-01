@@ -3,8 +3,8 @@
   (:local-nicknames
     (#:com #:janitor/common)
     (#:sp #:janitor/types))
-  (:import-from :local-time #:timestamp>= #:parse-timestring)
-  (:import-from :janitor/common #:clet #:clet* #:fn #:partial))
+  (:import-from :local-time #:timestamp< #:parse-timestring)
+  (:import-from :janitor/common #:clet #:clet* #:fn))
 
 (in-package :janitor/parser)
 
@@ -34,8 +34,12 @@
       (clet (price (mk-stockprice row))
         (if hit
           nil
-          (progn
-            (setq hit t) price))))))
+          (clet (cur-dx (sp:s-dx price))
+            (if (timestamp< cur-dx cut-off-date)
+              (progn
+                (setq hit t)
+                nil)
+              price)))))))
 
 (defun cut-off-items (items cut-off-date)
   (clet (fx (mk-stockprice-fn cut-off-date))
