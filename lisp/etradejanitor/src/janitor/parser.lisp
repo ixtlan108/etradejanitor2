@@ -2,8 +2,8 @@
   (:use :cl)
   (:local-nicknames
     (#:com #:janitor/common)
-    (#:sp #:janitor/types))
-  (:import-from :local-time #:timestamp< #:parse-timestring)
+    (#:ty #:janitor/types))
+  (:import-from :local-time #:timestamp<)
   (:import-from :janitor/common #:clet #:clet* #:fn))
 
 (in-package :janitor/parser)
@@ -18,23 +18,13 @@
 ; (2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0)
 ; ("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")
 
-(defun csv->time (s)
-  (parse-timestring (nth 0 (str:split " " s))))
-
-(defparameter demo-row
-  '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0"))
-
-(defun mk-stockprice (row)
-  (clet (dx (csv->time (nth 0 row)))
-    (sp:make-stockprice :dx dx)))
-
 (defun mk-stockprice-fn (cut-off-date)
   (clet (hit nil)
     (fn (row)
-      (clet (price (mk-stockprice row))
+      (clet (price (ty:mk-stockprice row))
         (if hit
           nil
-          (clet (cur-dx (sp:s-dx price))
+          (clet (cur-dx (ty:s-dx price))
             (if (timestamp< cur-dx cut-off-date)
               (progn
                 (setq hit t)
@@ -43,7 +33,7 @@
 
 (defun cut-off-items (items cut-off-date)
   (clet (fx (mk-stockprice-fn cut-off-date))
-    (map 'vector fx items)))
+    (remove-if #'null (map 'vector fx items))))
 
 
 ; (remove-if #'null items)
@@ -53,12 +43,8 @@
   ; items)
 
 (defun parse (ticker cut-off-date)
-  (clet*
-    (items (nreverse (com:read-csv (feed-csv-name ticker)))
-     coi (cut-off-items items cut-off-date))
-    ;(print *feed*)
-    ;(print cut-off-date)
-    coi))
+  (clet (items (nreverse (com:read-csv (feed-csv-name ticker))))
+    (cut-off-items items cut-off-date)))
 
 ; (defvar ixx
 ;   (let ((counter 0))
