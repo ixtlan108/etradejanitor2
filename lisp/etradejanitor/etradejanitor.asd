@@ -8,6 +8,7 @@
                   ((:file "janitor/common")
                    (:file "janitor/types")
                    (:file "janitor/main" :depends-on ("janitor/common"))
+                   (:file "janitor/db" :depends-on ("janitor/common"))
                    (:file "janitor/parser" :depends-on ("janitor/common")))))
   :description ""
   :in-order-to ((test-op (test-op "etradejanitor/tests"))))

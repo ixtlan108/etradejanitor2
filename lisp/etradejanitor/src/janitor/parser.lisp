@@ -4,21 +4,16 @@
     (#:com #:janitor/common)
     (#:ty #:janitor/types))
   (:import-from :local-time #:timestamp<)
-  (:import-from :janitor/common #:clet #:clet* #:fn))
+  (:import-from :janitor/common #:clet #:clet* #:fn)
+  (:export
+    #:parse
+    #:cut-off))
 
 (in-package :janitor/parser)
 
 (defparameter *feed* "/home/rcs/opt/etradejanitor2/feed")
 
 (defun demo () (postmodern:connect-toplevel))
-
-(defun start-database ()
-  "Start the database connection."
-  (unless *db*
-    (postmodern:connect-toplevel
-                database-name-here your-user-name-here
-                your-password-here "localhost"
-                :port *database-port*)))
 
 (defun feed-csv-name (ticker)
   (format nil "~a/~a.csv" *feed* ticker))
@@ -41,7 +36,7 @@
                 nil)
               price)))))))
 
-(defun cut-off-items (items cut-off-date)
+(defun cut-off (items cut-off-date)
   (clet (fx (mk-stockprice-fn cut-off-date))
     (remove-if #'null (map 'vector fx items))))
 
@@ -53,9 +48,15 @@
   ;     (clet (sp (mk-stockprice row)))
   ; items)
 
-(defun parse (ticker cut-off-date)
-  (clet (items (nreverse (com:read-csv (feed-csv-name ticker))))
-    (cut-off-items items cut-off-date)))
+(defun parse (ticker)
+  (nreverse (com:read-csv (feed-csv-name ticker))))
+
+(defun parse-cut-off (ticker cut-off-date)
+  (cut-off (parse ticker) cut-off-date))
+
+; (defun parse (ticker cut-off-date)
+;   (clet (items (nreverse (com:read-csv (feed-csv-name ticker))))
+;     (cut-off-items items cut-off-date)))
 
 ; (defvar ixx
 ;   (let ((counter 0))
