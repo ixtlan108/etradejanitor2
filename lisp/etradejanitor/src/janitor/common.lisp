@@ -1,5 +1,6 @@
 (defpackage janitor/common
   (:use :cl)
+  ;(:import-from :trivia #:match)
   (:import-from :local-time
     #:timestamp-day
     #:timestamp-month
@@ -9,29 +10,11 @@
     #:clet*
     #:read-csv
     #:date
-    #:is-date-string
+    #:iso-8601-string
     #:fn
     #:partial))
 
 (in-package :janitor/common)
-
-(defun date (year month day)
-  (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
-
-
-(defun iso-date-string (dt)
-  (clet (d (timestamp-day dt))
-    (if (< (timestamp-month dt) 10)
-      (if (< d 10)
-        (format-timestring nil dt :format '(:year "-0" :month "-0" :day))
-        (format-timestring nil dt :format '(:year "-0" :month "-" :day)))
-      (if (< d 10)
-        (format-timestring nil dt :format '(:year "-" :month "-0" :day))
-        (format-timestring nil dt :format '(:year "-" :month "-" :day))))))
-
-
-(defmacro fn (&rest forms)
-  `(lambda ,@forms))
 
 (defmacro clet (bindings &body body)
   `(let ,(loop for (a b) on bindings by #'cddr collect (list a b))
@@ -40,6 +23,24 @@
 (defmacro clet* (bindings &body body)
   `(let* ,(loop for (a b) on bindings by #'cddr collect (list a b))
      ,@body))
+
+(defun date (year month day)
+  (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
+
+
+(defun iso-8601-string (dt)
+  (clet* (d (timestamp-day dt)
+         m (timestamp-month dt)
+         my-format
+          (cond
+            ((and (< m 10) (< d 10)) '(:year "-0" :month "-0" :day))
+            ((and (< m 10) (>= d 10)) '(:year "-0" :month "-" :day))
+            ((and (>= m 10) (< d 10)) '(:year "-" :month "-0" :day))
+            (t                        '(:year "-" :month "-" :day))))
+    (format-timestring nil dt :format my-format)))
+
+(defmacro fn (&rest forms)
+  `(lambda ,@forms))
 
 (defun read-csv (csv-file &key (keep-header nil))
   (clet* (pn (pathname csv-file)

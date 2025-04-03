@@ -14,8 +14,6 @@
 
 (defparameter *feed* "/home/rcs/opt/etradejanitor2/feed")
 
-(defun demo () (postmodern:connect-toplevel))
-
 (defun feed-csv-name (ticker)
   (format nil "~a/~a.csv" *feed* ticker))
 
