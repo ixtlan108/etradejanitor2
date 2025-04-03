@@ -7,7 +7,8 @@
   (:import-from :janitor/common #:clet #:clet* #:fn)
   (:export
     #:parse
-    #:cut-off))
+    #:cut-off
+    #:parse-cut-off))
 
 (in-package :janitor/parser)
 

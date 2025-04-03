@@ -1,17 +1,53 @@
 (defpackage janitor/db
-  (:use :cl))
+  (:use :cl)
+  (:import-from :janitor/common #:clet #:clet*)
+  (:import-from :local-time
+    #:parse-timestring
+    #:timestamp+)
+  (:import-from :postmodern
+    #:connect-toplevel
+    #:disconnect-toplevel
+    #:query
+    #:defprepared
+    #:*database*)
+  (:export
+    #:ticker-dx))
 
 (in-package :janitor/db)
 
-(defparameter *db* nil)
-
 (defun my-connect ()
   "Start the database connection."
-  (unless *db*
-    (print "Connecting to database...")
-    (setq *db* t)
-    (postmodern:connect-toplevel
-      "trader" "trader" "ok" "172.20.1.6" :port 5432)))
+  (unless *database*
+    (connect-toplevel
+      "trader" "trader" "ok" "172.20.1.7" :port 5432)
+    (print "Connected to database...")))
 
 (defun my-disconnect()
-  (postmodern:disconnect-toplevel))
+  (print "Disconnecting from database...")
+  (disconnect-toplevel))
+
+(defun db-ticker-dx ()
+  (query
+    "select t.ticker,to_char(max(s.dx), 'yyyy-MM-dd') from stockmarket.stockprice s
+    join stockmarket.stocktickers t on t.oid = s.ticker_id
+    where t.status = 1
+    group by t.ticker"))
+
+(defprepared test21 "select name from countries where id=$1")
+
+(defun populate-ht (items)
+  (clet (ht (make-hash-table :test 'equal))
+    (loop for item in items
+      do
+        (clet*
+          (ticker (nth 0 item)
+          dx (nth 1 item)
+          dxt (timestamp+ (parse-timestring dx) 1 :day))
+            (setf (gethash ticker ht) dxt)))
+    ht))
+
+(defun ticker-dx ()
+  (clet*
+    (items (db-ticker-dx)
+    result (populate-ht items))
+    result))
