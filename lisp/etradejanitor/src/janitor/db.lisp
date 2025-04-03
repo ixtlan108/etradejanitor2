@@ -19,8 +19,7 @@
   "Start the database connection."
   (unless *database*
     (connect-toplevel
-      "trader" "trader" "ok" "172.20.1.7" :port 5432)
-    (print "Connected to database...")))
+      "trader" "trader" "ok" "172.20.1.7" :port 5432)))
 
 (defun my-disconnect()
   (print "Disconnecting from database...")
@@ -33,7 +32,6 @@
     where t.status = 1
     group by t.ticker"))
 
-(defprepared test21 "select name from countries where id=$1")
 
 (defun populate-ht (items)
   (clet (ht (make-hash-table :test 'equal))
@@ -47,7 +45,10 @@
     ht))
 
 (defun ticker-dx ()
+  (my-connect)
   (clet*
     (items (db-ticker-dx)
     result (populate-ht items))
     result))
+
+(defprepared test21 "select name from countries where id=$1")

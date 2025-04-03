@@ -2,7 +2,7 @@
   (:use :cl
         :rove)
   (:import-from :local-time #:parse-timestring #:timestamp=)
-  (:import-from :janitor/common #:clet #:clet* #:date)
+  (:import-from :janitor/common #:clet #:clet* #:date #:iso-date-string)
   (:local-nicknames
     (#:ty #:janitor/types)
     (#:parser #:janitor/parser)))
@@ -22,6 +22,19 @@
     :cls 314.2
     :vol 497342))
 
+(defvar jan-1 (janitor/common:date 2025 1 1))
+(defvar oct-1 (janitor/common:date 2025 10 1))
+(defvar oct-30 (janitor/common:date 2025 10 30))
+(defvar march-21 (janitor/common:date 2025 3 21))
+(defvar march-28 (janitor/common:date 2025 3 28))
+
+(deftest test-common
+  (testing "iso-date-string"
+    (ok (equal (iso-date-string jan-1) "2025-01-01"))
+    (ok (equal (iso-date-string march-21) "2025-03-21"))
+    (ok (equal (iso-date-string oct-1) "2025-10-01"))
+    (ok (equal (iso-date-string oct-30) "2025-10-30"))))
+
 (deftest test-types
   (testing "Stockprice"
     (clet
@@ -30,8 +43,6 @@
           '("2025-03-28 00:00:00+00:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
       (ok (ty:stockprice-equals actual expected)))))
 
-(defvar march-28 (janitor/common:date 2025 3 28))
-(defvar march-21 (janitor/common:date 2025 3 21))
 
 (deftest test-parser
   (testing "Parse stockprices"

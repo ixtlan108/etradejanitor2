@@ -1,10 +1,15 @@
 (defpackage janitor/common
   (:use :cl)
+  (:import-from :local-time
+    #:timestamp-day
+    #:timestamp-month
+    #:format-timestring)
   (:export
     #:clet
     #:clet*
     #:read-csv
     #:date
+    #:is-date-string
     #:fn
     #:partial))
 
@@ -12,6 +17,18 @@
 
 (defun date (year month day)
   (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
+
+
+(defun iso-date-string (dt)
+  (clet (d (timestamp-day dt))
+    (if (< (timestamp-month dt) 10)
+      (if (< d 10)
+        (format-timestring nil dt :format '(:year "-0" :month "-0" :day))
+        (format-timestring nil dt :format '(:year "-0" :month "-" :day)))
+      (if (< d 10)
+        (format-timestring nil dt :format '(:year "-" :month "-0" :day))
+        (format-timestring nil dt :format '(:year "-" :month "-" :day))))))
+
 
 (defmacro fn (&rest forms)
   `(lambda ,@forms))
