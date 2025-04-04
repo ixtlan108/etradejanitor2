@@ -14,12 +14,20 @@
     #:diff-days
     #:between
     #:float-equals-p
+    #:print-hash
     #:fn
     #:partial))
 
 ;(:import-from :trivia #:match)
 
 (in-package :janitor/common)
+
+(defun print-hash-entry (key value)
+  (format t "~S => ~S~%"
+            key value))
+
+(defun print-hash (ht)
+  (maphash #'print-hash-entry ht))
 
 (defmacro clet (bindings &body body)
   `(let ,(loop for (a b) on bindings by #'cddr collect (list a b))

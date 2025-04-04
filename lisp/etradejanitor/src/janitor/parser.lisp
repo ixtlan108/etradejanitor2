@@ -12,7 +12,8 @@
 
 (in-package :janitor/parser)
 
-(defparameter *feed* "/home/rcs/opt/etradejanitor2/feed")
+(defparameter *feed*
+  (uiop:native-namestring "~/opt/etradejanitor2/feed"))
 
 (defun feed-csv-name (ticker)
   (format nil "~a/~a.csv" *feed* ticker))
@@ -48,7 +49,10 @@
   ; items)
 
 (defun parse (ticker)
-  (nreverse (com:read-csv (feed-csv-name ticker))))
+  (clet (csv-name (feed-csv-name ticker))
+    (if (uiop:file-exists-p csv-name)
+      (nreverse (com:read-csv csv-name))
+      nil)))
 
 (defun parse-cut-off (ticker cut-off-date)
   (cut-off (parse ticker) cut-off-date))

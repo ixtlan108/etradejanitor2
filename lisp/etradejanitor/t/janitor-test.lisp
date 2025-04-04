@@ -17,7 +17,10 @@
 
 ; company portal
 ;
-(defparameter test-feed "/home/rcs/opt/etradejanitor2/lisp/etradejanitor/t/resources")
+;(defparameter test-feed "/home/rcs/opt/etradejanitor2/lisp/etradejanitor/t/resources")
+
+(defvar test-feed
+  (uiop:native-namestring "~/opt/etradejanitor2/lisp/etradejanitor/t/resources"))
 
 
 (defvar expected
@@ -31,21 +34,34 @@
 
 (defvar jan-1 (date 2025 1 1))
 (defvar jan-2 (date 2025 1 2))
+(defvar jan-5 (date 2025 1 5))
+(defvar jan-6 (date 2025 1 6))
+(defvar jan-7 (date 2025 1 7))
 (defvar jan-29 (date 2025 1 29))
 (defvar feb-1 (date 2025 2 1))
+(defvar apr-1 (date 2025 4 1))
 (defvar oct-1 (date 2025 10 1))
 (defvar oct-30 (date 2025 10 30))
 (defvar march-21 (date 2025 3 21))
 (defvar march-28 (date 2025 3 28))
-(defvar apr-1 (date 2025 4 1))
+(defvar dec-31 (date 2025 12 31))
+(defvar jan-2026-1 (date 2026 1 1))
+(defvar march-2026-30 (date 2026 3 30))
+(defvar aug-2027-2 (date 2027 8 2))
 
 (deftest test-yahoo
   (testing "yahoo-period"
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-2) "1d"))
-    ;(ok (equal (ya:yahoo-period jan-1 :end-date jan-29) "5d"))
-    (ok (equal (ya:yahoo-period jan-1 :end-date jan-29) "1m"))
-    (ok (equal (ya:yahoo-period jan-1 :end-date feb-1) "3m"))
-    (ok (equal (ya:yahoo-period jan-1 :end-date apr-1) "6m"))))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-5) "5d"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-6) "1mo"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-7) "1mo"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-29) "1mo"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date feb-1) "3mo"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date apr-1) "6mo"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date dec-31) "1y"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-2026-1) "2y"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date march-2026-30) "2y"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date aug-2027-2) "5y"))))
 
 (deftest test-common
   (testing "iso-date-string"
