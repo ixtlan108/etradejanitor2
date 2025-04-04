@@ -1,18 +1,23 @@
 (defpackage janitor/common
   (:use :cl)
-  ;(:import-from :trivia #:match)
   (:import-from :local-time
     #:timestamp-day
     #:timestamp-month
-    #:format-timestring)
+    #:format-timestring
+    #:timestamp-to-unix)
   (:export
     #:clet
     #:clet*
     #:read-csv
     #:date
     #:iso-8601-string
+    #:diff-days
+    #:between
+    #:float-equals-p
     #:fn
     #:partial))
+
+;(:import-from :trivia #:match)
 
 (in-package :janitor/common)
 
@@ -23,6 +28,7 @@
 (defmacro clet* (bindings &body body)
   `(let* ,(loop for (a b) on bindings by #'cddr collect (list a b))
      ,@body))
+
 
 (defun date (year month day)
   (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
@@ -38,6 +44,33 @@
             ((and (>= m 10) (< d 10)) '(:year "-" :month "-0" :day))
             (t                        '(:year "-" :month "-" :day))))
     (format-timestring nil dt :format my-format)))
+
+(defconstant +seconds-in-day+ 86400)
+
+(defun diff-days (from-date to-date)
+  (clet*
+    (ttu-from (timestamp-to-unix from-date)
+    ttu-to (timestamp-to-unix to-date)
+    diff (- ttu-to ttu-from))
+  (if (<= diff 0)
+    0
+    (/ diff +seconds-in-day+))))
+
+(defun between (from-value to-value value &key (closed-end nil))
+  (clet (end-fn (if closed-end #'<= #'<))
+    (if
+      (and
+        (>= value from-value)
+        (funcall end-fn value to-value))
+      t
+      nil)))
+
+(defun float-equals-p (f1 f2 &optional (epsilon 0.0005))
+  (declare (type real f1 f2 epsilon))
+  (let ((delta (* (abs f1) epsilon)))
+    (<= (- f1 delta)
+        f2
+        (+ f1 delta))))
 
 (defmacro fn (&rest forms)
   `(lambda ,@forms))
