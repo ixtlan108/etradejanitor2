@@ -16,6 +16,7 @@
     #:float-equals-p
     #:print-hash
     #:fn
+    #:>0
     #:partial))
 
 ;(:import-from :trivia #:match)
@@ -29,6 +30,14 @@
 (defun print-hash (ht)
   (maphash #'print-hash-entry ht))
 
+(defun >0 (items)
+  (if (null items)
+    nil
+    (> (length items) 0)))
+
+(defmacro fn (&rest forms)
+  `(lambda ,@forms))
+
 (defmacro clet (bindings &body body)
   `(let ,(loop for (a b) on bindings by #'cddr collect (list a b))
      ,@body))
@@ -40,7 +49,6 @@
 
 (defun date (year month day)
   (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
-
 
 (defun iso-8601-string (dt)
   (clet* (d (timestamp-day dt)
@@ -64,11 +72,13 @@
     0
     (/ diff +seconds-in-day+))))
 
-(defun between (from-value to-value value &key (closed-end nil))
-  (clet (end-fn (if closed-end #'<= #'<))
+(defun between (from-value to-value value &key (open-end nil) (closed-end nil))
+  (clet
+    (opn-fn (if open-end #'< #'<=)
+    end-fn (if closed-end #'<= #'<))
     (if
       (and
-        (>= value from-value)
+        (funcall opn-fn from-value value)
         (funcall end-fn value to-value))
       t
       nil)))
@@ -79,9 +89,6 @@
     (<= (- f1 delta)
         f2
         (+ f1 delta))))
-
-(defmacro fn (&rest forms)
-  `(lambda ,@forms))
 
 (defun read-csv (csv-file &key (keep-header nil))
   (clet* (pn (pathname csv-file)

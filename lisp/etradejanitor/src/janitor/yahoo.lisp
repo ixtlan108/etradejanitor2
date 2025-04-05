@@ -20,7 +20,7 @@
      dd (diff-days start-date dt))
     (print dd)
     (cond
-      ((between 0 1.0 dd :closed-end t) "1d")
+      ((between 0 1.0 dd :open-end t :closed-end t) "1d")
       ((between 1.0 5.0 dd) "5d")
       ((between 5.0 29.0 dd) "1mo")
       ((between 29.0 89.0 dd) "3mo")
@@ -28,4 +28,4 @@
       ((between 180.0 365.0 dd) "1y")
       ((between 365.0 729.0 dd) "2y")
       ((between 729.0 1824.0 dd) "5y")
-      (t "10y"))))
+      (t "na"))))

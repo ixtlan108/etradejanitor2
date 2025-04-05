@@ -8,13 +8,18 @@
     "postmodern"
     "local-time"
     "parse-number"
-    "trivia")
+    "trivia"
+    "log4cl")
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")
                    (:file "janitor/types")
                    (:file "janitor/yahoo" :depends-on ("janitor/common"))
-                   (:file "janitor/main" :depends-on ("janitor/common" "janitor/db" "janitor/parser"))
+                   (:file "janitor/main"
+                      :depends-on
+                        ("janitor/common"
+                        "janitor/db"
+                        "janitor/parser"))
                    (:file "janitor/db" :depends-on ("janitor/common"))
                    (:file "janitor/parser" :depends-on ("janitor/common")))))
   :description ""

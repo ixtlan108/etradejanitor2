@@ -7,6 +7,7 @@
     #:clet*
     #:date
     #:iso-8601-string
+    #:between
     #:float-equals-p)
   (:local-nicknames
     (#:ya #:janitor/yahoo)
@@ -51,6 +52,7 @@
 
 (deftest test-yahoo
   (testing "yahoo-period"
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-1) "na"))
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-2) "1d"))
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-5) "5d"))
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-6) "1mo"))
@@ -71,7 +73,12 @@
     (ok (equal (iso-8601-string oct-30) "2025-10-30")))
   (testing "float-equals-p"
     (ok (float-equals-p 0.1 0.1))
-    (ng (float-equals-p 0.1 0.01))))
+    (ng (float-equals-p 0.1 0.01)))
+  (testing "between"
+    (ok (equal (between 0 1.0 0) t))
+    (ok (null (between 0 1.0 0 :open-end t)))
+    (ok (null (between 0 1.0 1.0)))
+    (ok (equal (between 0 1.0 1.0 :closed-end t) t))))
 
 (deftest test-types
   (testing "Stockprice"
@@ -103,4 +110,10 @@
       (clet*
         (tm (date 2025 3 30)
         result (parser:cut-off items tm))
-        (ok (= 0 (length result)))))))
+        (ok (= 0 (length result))))))
+  (testing "Parse no stockprices"
+    (clet*
+      (parser::*feed* test-feed
+       items (parser:parse "YARX"))
+      (print items)
+      (ok (null items)))))
