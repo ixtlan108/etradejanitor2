@@ -27,8 +27,8 @@
 (in-package :janitor/common)
 
 (defparameter *home*
-  ;(uiop:native-namestring "~/opt/etradejanitor2"))
-  (uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+  (uiop:native-namestring "~/opt/etradejanitor2"))
+  ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
 
 (defun print-hash-entry (key value)
   (format t "~S => ~S~%"

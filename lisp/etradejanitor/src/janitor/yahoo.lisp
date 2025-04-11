@@ -30,8 +30,8 @@
 
 (defvar yahoo-python (format nil "~a/python/yahoo.py" janitor/common:*home*))
 
-;(defvar pytho3 "/usr/bin/python3")
-(defvar python3 "/opt/homebrew/bin/python3")
+(defvar python3 "/usr/bin/python3")
+;(defvar python3 "/opt/homebrew/bin/python3")
 
 (defun download-ticker (ht-tdx ticker)
   (clet
