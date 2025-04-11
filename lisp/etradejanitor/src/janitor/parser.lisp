@@ -45,7 +45,6 @@
 
 (defun parse (ticker)
   (clet (csv-name (feed-csv-name ticker))
-    (print csv-name)
     (if (uiop:file-exists-p csv-name)
       (nreverse (com:read-csv csv-name))
       nil)))

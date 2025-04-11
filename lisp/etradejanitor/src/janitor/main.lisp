@@ -4,14 +4,18 @@
   (:import-from :janitor/types
     #:s-dx)
   (:import-from :janitor/common
+    #:cache
     #:clet
     #:clet*
     #:>0
     #:partial
     #:fn
-    #:vec-last)
+    #:vec-last
+    #:iso-8601-string)
   (:import-from :trivia #:match)
   (:local-nicknames
+    (#:db #:janitor/db)
+    (#:yahoo #:janitor/yahoo)
     (#:pa #:janitor/parser))
   (:export
     #:run))
@@ -66,8 +70,24 @@
   (clet
     (start-date (s-dx (vec-last co)))
       (if (timestamp< dx start-date)
-        (list :status :start-date-error)
+        (list :status :start-date-error
+              :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
         (list :status :ok :result co))))
+
+(defun print-status (cut-offs)
+  (dolist (c cut-offs)
+    (let ((s (getf c :status)))
+      (cond
+        ((equal s :ok)
+          (let* ((rows (getf c :rows))
+                (ed (elt rows 0))
+                (sd (vec-last rows)))
+            (princ (format nil "ticker: ~a => status: ~a, num items: ~a, start: ~a, end:~a~%"
+                    (getf c :ticker) (getf c :status) (getf c :len) (iso-8601-string (s-dx sd)) (iso-8601-string (s-dx ed))))))
+        (t
+          (if (getf c :err)
+            (princ (format nil "ticker: ~a => status: ~a, err: ~a~%" (getf c :ticker) (getf c :status) (getf c :err)))
+            (princ (format nil "ticker: ~a => status: ~a~%" (getf c :ticker) (getf c :status)))))))))
 
 (defun parse-ticker (ticker ht)
   (clet
@@ -79,6 +99,9 @@
         (if items
           (clet (cut-offs (pa:cut-off items oid cur-dx))
             (if (>0 cut-offs)
+              ;(progn
+                ;(if (equal "NHY" ticker)
+                ;  (print cut-offs))
               (validate-cut-offs cut-offs cur-dx)
               (list :status :empty-cutoffs)))
           (list :status :missing-csv)))
@@ -99,27 +122,36 @@
             (push (list :status :ok :ticker ticker :len (length x) :rows x) remaining))
           ((list :status :missing-csv)
             (push (list :status :missing-csv :ticker ticker) remaining))
-          (_ (push (list :status :unknown :ticker ticker) remaining)))))
+          ((list :status :start-date-error :err error)
+            (push (list :status :start-date-error :ticker ticker :err error) remaining))
+          (_
+            (print m)
+            (push (list :status :unknown :ticker ticker) remaining)))))
     remaining))
 
-(defparameter *tdx* nil)
+(defparameter tdx (cache (lambda () (janitor/db:ticker-dx))))
 
-(defun tdx ()
-  (unless *tdx*
-    (print "Setting tdx...")
-    (setq *tdx* (janitor/db:ticker-dx)))
-  *tdx*)
+; (defun process-db-tickers (tix)
+;   (dolist (t tix)
+;     (when (equal (getf t :status) :ok)
+;       ()
+;       )))
 
 (defun run (tickers)
-  (clet (tix (parse-tickers (tdx) tickers))
+  (let ((tix (parse-tickers (funcall tdx) tickers)))
+    (print-status tix)
     tix))
 
 (defun run-tier-1 ()
   (run tier-1))
 
+(defun download-tickers (tix)
+  (yahoo:download-tickers (funcall tdx) tix))
+
 (defun download-all ()
   (clet (tix (concatenate 'list tier-1 tier-2 tier-3))
-    (janitor/yahoo::download-tickers (tdx) tix)))
+    (yahoo:download-tickers (funcall tdx) tix)))
+
 
 ; (defun copy-ht-item (new-ht ticker key value)
 ;   (format t "~S ~S ~S => ~S~%"

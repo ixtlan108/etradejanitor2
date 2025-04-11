@@ -32,8 +32,7 @@
   "Start the database connection."
   (unless *database*
     (connect-toplevel
-      "trader" "trader" "ok" "localhost" :port 5432)))
-;"trader" "trader" "ok" "172.20.1.7" :port 5432)))
+      "trader" "trader" "ok" "172.20.1.7" :port 5432)))
 
 (defun my-disconnect()
   (print "Disconnecting from database...")

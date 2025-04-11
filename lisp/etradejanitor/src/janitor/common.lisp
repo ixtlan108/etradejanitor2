@@ -6,6 +6,7 @@
     #:format-timestring
     #:timestamp-to-unix)
   (:export
+    #:cache
     #:clet
     #:clet*
     #:read-csv
@@ -27,8 +28,22 @@
 (in-package :janitor/common)
 
 (defparameter *home*
-  ;(uiop:native-namestring "~/opt/etradejanitor2"))
-  (uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+  (uiop:native-namestring "~/opt/etradejanitor2"))
+  ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+
+(defmacro cache(fn)
+  (let ((mydata (gensym)))
+    `(let ((,mydata nil))
+      (lambda (&key (invalidate nil))
+        (if invalidate
+          (progn
+            (princ (format nil "Invalidating cache..~%"))
+            (setf ,mydata nil))
+          (progn
+            (when (null ,mydata)
+              (princ (format nil "Memoizing...~%"))
+              (setf ,mydata (funcall ,fn)))))
+        ,mydata))))
 
 (defun print-hash-entry (key value)
   (format t "~S => ~S~%"
@@ -78,18 +93,17 @@
 (defconstant +seconds-in-day+ 86400)
 
 (defun diff-days (from-date to-date)
-  (clet*
-    (ttu-from (timestamp-to-unix from-date)
-    ttu-to (timestamp-to-unix to-date)
-    diff (- ttu-to ttu-from))
-  (if (<= diff 0)
-    0
-    (/ diff +seconds-in-day+))))
+  (let* ((ttu-from  (timestamp-to-unix from-date))
+         (ttu-to    (timestamp-to-unix to-date))
+         (diff      (- ttu-to ttu-from)))
+    (/ diff +seconds-in-day+)))
+
+;  (if (<= diff 0)
+;    0
 
 (defun between (from-value to-value value &key (begin-open nil) (end-closed nil))
-  (clet
-    (opn-fn (if begin-open #'< #'<=)
-    end-fn (if end-closed #'<= #'<))
+  (let ((opn-fn (if begin-open #'< #'<=))
+        (end-fn (if end-closed #'<= #'<)))
     (if
       (and
         (funcall opn-fn from-value value)

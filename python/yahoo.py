@@ -38,9 +38,9 @@ TICKERS = [
 
 PERIOD = "1d"
 
-#FEED = "/home/rcs/opt/etradejanitor2/feed"
+FEED = "/home/rcs/opt/etradejanitor2/feed"
 
-FEED = "/Users/zeus/Projects/lisp/etradejanitor2/feed"
+# FEED = "/Users/zeus/Projects/lisp/etradejanitor2/feed"
 
 
 def save_to_cvs(t,period):

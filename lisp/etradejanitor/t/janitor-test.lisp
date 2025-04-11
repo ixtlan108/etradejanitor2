@@ -34,8 +34,10 @@
     :cls 314.2
     :vol 497342))
 
+(defvar dec-2024-30 (date 2024 12 30))
 (defvar jan-1 (date 2025 1 1))
 (defvar jan-2 (date 2025 1 2))
+(defvar jan-4 (date 2025 1 4))
 (defvar jan-5 (date 2025 1 5))
 (defvar jan-6 (date 2025 1 6))
 (defvar jan-7 (date 2025 1 7))
@@ -53,8 +55,10 @@
 
 (deftest test-yahoo
   (testing "yahoo-period"
-    (ok (equal (ya:yahoo-period jan-1 :end-date jan-1) "na"))
-    (ok (equal (ya:yahoo-period jan-1 :end-date jan-2) "1d"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date dec-2024-30) "na"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-1) "1d"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-2) "5d"))
+    (ok (equal (ya:yahoo-period jan-1 :end-date jan-4) "5d"))
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-5) "5d"))
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-6) "1mo"))
     (ok (equal (ya:yahoo-period jan-1 :end-date jan-7) "1mo"))
