@@ -18,8 +18,8 @@
     (dt (if (null end-date) (today) end-date)
      dd (diff-days start-date dt))
     (cond
-      ((between 0 1.0 dd :begin-open t :end-closed t) "1d")
-      ((between 1.0 5.0 dd :begin-open t) "5d")
+      ((between 0 1.0 dd) "1d")
+      ((between 1.0 5.0 dd) "5d")
       ((between 5.0 29.0 dd) "1mo")
       ((between 29.0 89.0 dd) "3mo")
       ((between 89.0 180.0 dd) "6mo")
