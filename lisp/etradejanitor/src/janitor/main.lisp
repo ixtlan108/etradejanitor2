@@ -129,21 +129,33 @@
             (push (list :status :unknown :ticker ticker) remaining)))))
     remaining))
 
-(defparameter tdx (cache (lambda () (janitor/db:ticker-dx))))
+(defparameter tdx (cache (lambda () (db:ticker-dx))))
 
-; (defun process-db-tickers (tix)
-;   (dolist (t tix)
-;     (when (equal (getf t :status) :ok)
-;       ()
-;       )))
+(defun process-db-tickers (tix)
+  (dolist (ticker tix)
+    (when (equal (getf ticker :status) :ok)
+      (db:insert-stockprice (getf ticker :rows)))))
 
-(defun run (tickers)
+(defun run (tickers &key (skip-db nil))
   (let ((tix (parse-tickers (funcall tdx) tickers)))
     (print-status tix)
+    (unless skip-db
+      (process-db-tickers tix))
     tix))
 
-(defun run-tier-1 ()
-  (run tier-1))
+(defun run-tier-n (tier skip-db invalidate-tdx)
+  (if invalidate-tdx
+    (funcall tdx :invalidate t))
+  (run tier :skip-db skip-db))
+
+(defun run-tier-1 (&key (skip-db nil) (invalidate-tdx nil))
+  (run-tier-n tier-1 skip-db invalidate-tdx))
+
+(defun run-tier-2 (&key (skip-db nil) (invalidate-tdx nil))
+  (run-tier-n tier-2 skip-db invalidate-tdx))
+
+(defun run-tier-3 (&key (skip-db nil) (invalidate-tdx nil))
+  (run-tier-n tier-3 skip-db invalidate-tdx))
 
 (defun download-tickers (tix)
   (yahoo:download-tickers (funcall tdx) tix))
