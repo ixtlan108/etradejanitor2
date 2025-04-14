@@ -55,13 +55,13 @@
     (setf (gethash "NAS" ht) 29)
     ht))
 
-(defvar tier-1
+(defparameter tier-1
   '("NHY" "STB" "YAR"))
 
-(defvar tier-2
-  '("AKSO" "DNB" "GJF" "ORK" "PGS" "TOM"))
+(defparameter tier-2
+  '("AKSO" "DNB" "GJF" "ORK" "TOM"))
 
-(defvar tier-3
+(defparameter tier-3
   '("BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
 
 ;(defvar tickers-all ())
@@ -99,9 +99,6 @@
         (if items
           (clet (cut-offs (pa:cut-off items oid cur-dx))
             (if (>0 cut-offs)
-              ;(progn
-                ;(if (equal "NHY" ticker)
-                ;  (print cut-offs))
               (validate-cut-offs cut-offs cur-dx)
               (list :status :empty-cutoffs)))
           (list :status :missing-csv)))
