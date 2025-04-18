@@ -73,24 +73,8 @@
   (format t "~{~a ~}~%" *cfg*))
   ;(format t "~{~a~^, ~}" *cfg*))
 
-(defun cfg (key v)
-  ;`(setf (getf *cfg* ,key) ,v))
-  (setf (getf *cfg* key) v))
-
 (defun cfg-get (key)
   (getf *cfg* key))
-
-(defun cfg-demo (&key (skip-db nil) (inv-tdx nil) (skip-val nil))
-  (let ((*cfg*
-          (list
-            :skip-db skip-db
-            :invalidate-tdx inv-tdx
-            :skip-validate skip-val)))
-    (cfg-demo-1)))
-
-    ;(cfg :skip-db t)
-    ;(cfg :invalidate-tdx t)
-    ;(cfg :skip-validate t)
 
 (defun validate-cut-offs (co dx)
   (prn-cfg)
@@ -155,7 +139,7 @@
             (push (list :status :unknown :ticker ticker) remaining)))))
     remaining))
 
-(defparameter tdx (cache (lambda () (db:ticker-dx))))
+(defparameter tdx (cache #'db:ticker-dx))
 
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
@@ -166,9 +150,8 @@
   (let ((tix (parse-tickers (funcall tdx) tickers)))
     (print-status tix)
     (unless (cfg-get :skip-db)
-      (progn
-        (print "Inserting prices into database..."))
-        (process-db-tickers tix))
+      (print "Inserting prices into database...")
+      (process-db-tickers tix))
     tix))
 
 (defun run-tier-n (tier)
