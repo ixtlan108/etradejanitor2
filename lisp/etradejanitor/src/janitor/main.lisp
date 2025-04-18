@@ -66,13 +66,27 @@
 
 ;(defvar tickers-all ())
 
+(defparameter *cfg*
+  (list :skip-db nil :invalidate-tdx nil :skip-validate nil))
+
+(defun prn-cfg ()
+  (format t "~{~a ~}~%" *cfg*))
+  ;(format t "~{~a~^, ~}" *cfg*))
+
+(defun cfg-get (key)
+  (getf *cfg* key))
+
 (defun validate-cut-offs (co dx)
-  (clet
-    (start-date (s-dx (vec-last co)))
-      (if (timestamp< dx start-date)
-        (list :status :start-date-error
-              :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
-        (list :status :ok :result co))))
+  (prn-cfg)
+  (if (cfg-get :skip-validate)
+    (list :status :ok :result co)
+    (progn
+      (let
+        ((start-date (s-dx (vec-last co))))
+          (if (timestamp< dx start-date)
+            (list :status :start-date-error
+                  :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
+            (list :status :ok :result co))))))
 
 (defun print-status (cut-offs)
   (dolist (c cut-offs)
@@ -90,14 +104,13 @@
             (princ (format nil "ticker: ~a => status: ~a~%" (getf c :ticker) (getf c :status)))))))))
 
 (defun parse-ticker (ticker ht)
-  (clet
-    (cur-dx (gethash ticker ht))
+  (let ((cur-dx (gethash ticker ht)))
     (if cur-dx
-      (clet
-        (oid (gethash ticker ticker-oid-ht)
-          items (pa:parse ticker))
+      (let
+        ((oid (gethash ticker ticker-oid-ht))
+         (items (pa:parse ticker)))
         (if items
-          (clet (cut-offs (pa:cut-off items oid cur-dx))
+          (let ((cut-offs (pa:cut-off items oid cur-dx)))
             (if (>0 cut-offs)
               (validate-cut-offs cut-offs cur-dx)
               (list :status :empty-cutoffs)))
@@ -126,33 +139,44 @@
             (push (list :status :unknown :ticker ticker) remaining)))))
     remaining))
 
-(defparameter tdx (cache (lambda () (db:ticker-dx))))
+(defparameter tdx (cache #'db:ticker-dx))
 
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
       (db:insert-stockprice (getf ticker :rows)))))
 
-(defun run (tickers &key (skip-db nil))
+(defun run (tickers)
   (let ((tix (parse-tickers (funcall tdx) tickers)))
     (print-status tix)
-    (unless skip-db
+    (unless (cfg-get :skip-db)
+      (print "Inserting prices into database...")
       (process-db-tickers tix))
     tix))
 
-(defun run-tier-n (tier skip-db invalidate-tdx)
-  (if invalidate-tdx
+(defun run-tier-n (tier)
+  (prn-cfg)
+  (if (cfg-get :invalidate-tdx)
     (funcall tdx :invalidate t))
-  (run tier :skip-db skip-db))
+  (run tier))
 
-(defun run-tier-1 (&key (skip-db nil) (invalidate-tdx nil))
-  (run-tier-n tier-1 skip-db invalidate-tdx))
+(defun config-cfg (skip-db invalidate-tdx skip-validate)
+  (list
+    :skip-db skip-db
+    :invalidate-tdx invalidate-tdx
+    :skip-validate skip-validate))
 
-(defun run-tier-2 (&key (skip-db nil) (invalidate-tdx nil))
-  (run-tier-n tier-2 skip-db invalidate-tdx))
+(defun run-tier-1 (&key (s-db nil) (i-tdx nil) (s-val nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val)))
+    (run-tier-n tier-1)))
 
-(defun run-tier-3 (&key (skip-db nil) (invalidate-tdx nil))
-  (run-tier-n tier-3 skip-db invalidate-tdx))
+(defun run-tier-2 (&key (s-db nil) (i-tdx nil) (s-val nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val)))
+    (run-tier-n tier-2)))
+
+(defun run-tier-3 (&key (s-db nil) (i-tdx nil) (s-val nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val)))
+    (run-tier-n tier-3)))
 
 (defun download-tickers (tix)
   (yahoo:download-tickers (funcall tdx) tix))
