@@ -2,14 +2,17 @@
   (:use :cl)
   (:local-nicknames
     (#:com #:janitor/common)
-    (#:ty #:janitor/types))
+    (#:sprice #:janitor/stockmarket/stockprice))
   (:import-from :local-time #:timestamp<)
+  (:import-from :janitor/stockmarket/util
+    #:ticker-oid-ht)
   (:import-from :janitor/common
     #:clet
     #:clet* #:fn
     #:*home*)
   (:export
     #:parse
+    #:parse-spot
     #:cut-off
     #:parse-cut-off))
 
@@ -18,8 +21,14 @@
 (defparameter *feed*
   (format nil "~a/feed" *home*))
 
+(defparameter *spot*
+  (format nil "~a/spot" *home*))
+
 (defun feed-csv-name (ticker)
   (format nil "~a/~a.csv" *feed* ticker))
+
+(defun spot-csv-name (ticker)
+  (format nil "~a/~a.csv" *spot* ticker))
 
 ; Date,Open,High,Low,Close,Volume,Dividends,Stock Splits
 ; 2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0
@@ -29,10 +38,10 @@
 (defun mk-stockprice-fn (ticker-oid cut-off-date)
   (clet (hit nil)
     (fn (row)
-      (clet (price (ty:mk-stockprice ticker-oid row))
+      (clet (price (sprice:mk-stockprice ticker-oid row))
         (if hit
           nil
-          (clet (cur-dx (ty:s-dx price))
+          (clet (cur-dx (sprice:s-dx price))
             (if (timestamp< cur-dx cut-off-date)
               (progn
                 (setq hit t)
@@ -49,21 +58,12 @@
       (nreverse (com:read-csv csv-name))
       nil)))
 
-(defun parse-cut-off (ticker cut-off-date)
-  (cut-off (parse ticker) 1 cut-off-date))
-
-; (defun parse (ticker cut-off-date)
-;   (clet (items (nreverse (com:read-csv (feed-csv-name ticker))))
-;     (cut-off-items items cut-off-date)))
-
-; (defvar ixx
-;   (let ((counter 0))
-;     (lambda ()
-;       (setq counter (+ counter 1))
-;       counter)))
-; (funcall ixx)
-
-;(com:read-csv (feed-csv-name ticker) :keep-header t))
+(defun parse-spot (ticker)
+  (let ((csv-name (spot-csv-name ticker))
+        (oid (gethash ticker ticker-oid-ht)))
+    (if (uiop:file-exists-p csv-name)
+      (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name))))
+      nil)))
 
 ; 22.1.4. Standard Dispatching Macro Character Syntax
 ; The standard syntax includes forms introduced by the # character. These take the general form of a #, a second character that identifies the syntax, and following arguments in some form. If the second character is a letter, then case is not important; #O and #o are considered to be equivalent, for example.

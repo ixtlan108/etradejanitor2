@@ -1,4 +1,4 @@
-(defpackage janitor/types
+(defpackage janitor/stockmarket/stockprice
   (:use :cl)
   (:import-from :local-time #:timestamp= #:parse-timestring)
   (:import-from :janitor/common #:clet)
@@ -15,7 +15,7 @@
     #:s-cls
     #:s-vol))
 
-(in-package :janitor/types)
+(in-package :janitor/stockmarket/stockprice)
 
 (defstruct (stockprice (:conc-name s-)) (ticker 0 :type integer) dx opn hi lo cls vol)
 
@@ -41,13 +41,3 @@
     cls (parse-number (nth 4 row))
     vol (parse-number (nth 5 row)))
     (make-stockprice :ticker oid :dx dx :opn opn :hi hi :lo lo :cls cls :vol vol)))
-
-; Date 0,Open 1,High 2,Low 3,Close 4,Volume 5,Dividends,Stock Splits
-
-; (defparameter rt1
-;   (mk-stockprice
-;     '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
-
-; (defparameter rt2
-;   (mk-stockprice
-;     '("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))

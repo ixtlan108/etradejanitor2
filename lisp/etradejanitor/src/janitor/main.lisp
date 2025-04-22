@@ -1,8 +1,9 @@
 (defpackage janitor/main
   (:use :cl)
   (:import-from :local-time #:timestamp<)
-  (:import-from :janitor/types
-    #:s-dx)
+  (:import-from :janitor/stockmarket/stockprice
+    #:s-dx
+    #:s-opn)
   (:import-from :janitor/common
     #:cache
     #:clet
@@ -58,11 +59,20 @@
 (defparameter tier-1
   '("NHY" "STB" "YAR"))
 
+; 1, 3, 14
+
 (defparameter tier-2
   '("AKSO" "DNB" "GJF" "ORK" "TOM"))
 
+; 18,19,21,9,17
+
 (defparameter tier-3
   '("BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
+
+(defparameter tier-all
+  (concatenate 'list tier-1 tier-2 tier-3))
+
+; 27,26,20,28,29,23,16
 
 ;(defvar tickers-all ())
 
@@ -77,7 +87,6 @@
   (getf *cfg* key))
 
 (defun validate-cut-offs (co dx)
-  (prn-cfg)
   (if (cfg-get :skip-validate)
     (list :status :ok :result co)
     (progn
@@ -118,7 +127,7 @@
       (list :status :empty-dx))))
 
 (defun parse-tickers (ht-tdx tickers)
-  (clet (remaining '())
+  (let ((remaining '()))
     (dolist (ticker tickers)
       (clet (m (parse-ticker ticker ht-tdx))
         (match m
@@ -181,21 +190,66 @@
 (defun download-tickers (tix)
   (yahoo:download-tickers (funcall tdx) tix))
 
-(defun download-all ()
-  (clet (tix (concatenate 'list tier-1 tier-2 tier-3))
-    (yahoo:download-tickers (funcall tdx) tix)))
+(defun download-all (&key (i-tdx nil))
+  (if i-tdx
+    (funcall tdx :invalidate t))
+  (yahoo:download-tickers (funcall tdx) tier-all))
 
+; (redis:with-connection (:host "172.20.1.2") (redis:red-select 4) (redis:red-hset "openingprice" "YAX" "34.34"))
 
-; (defun copy-ht-item (new-ht ticker key value)
-;   (format t "~S ~S ~S => ~S~%"
-;           new-ht ticker key value))
+(defvar redis-host "172.20.1.2")
 
-; (defun copy-ht-items (ht)
-;   (clet*
-;     (new-ht (make-hash-table :test 'equal)
-;     func (partial #'copy-ht-item new-ht))
-;       (maphash func ht "YAR")))
+(defun opening-price (ticker)
+  (let ((spot (pa:parse-spot ticker)))
+    (when spot
+      (let ((opn (s-opn spot)))
+        (redis:red-hset "openingprices" ticker opn)))))
 
+(defun opening-prices (tickers &key (db 0))
+  (redis:with-connection (:host redis-host)
+    (redis:red-select db)
+    (dolist (ticker tickers)
+      (opening-price ticker))))
+
+(defun opening-prices-tier-1  (&key (db 0))
+  (opening-prices tier-1 db))
+
+(defun opening-prices-tier-2  (&key (db 0))
+  (opening-prices tier-2 db))
+
+(defun opening-prices-tier-3  (&key (db 0))
+  (opening-prices tier-3 db))
+
+(defun opening-prices-all (&key (db 0))
+  (opening-prices tier-all db))
+
+(defun spot (ticker)
+  (yahoo:download-spot ticker))
+
+(defun spots (tickers)
+  (dolist (ticker tickers)
+    (spot ticker)))
+
+(defun spots-tier-1 ()
+  (spots tier-1))
+
+(defun spots-tier-2 ()
+  (spots tier-2))
+
+(defun spots-tier-3 ()
+  (spots tier-3))
+
+(defun spots-all ()
+  (spots tier-all))
+
+; (defun spot (ticker &key (redis nil) (db 0))
+;   (yahoo:download-spot ticker)
+;   (if redis
+;     (redis:with-connection (:host redis-host)
+;       (redis:red-select db)
+;       (opening-price ticker db))))
+
+;select t.oid,t.ticker,max(p.dx) from stockmarket.stockprice p join stockmarket.stocktickers t on t.oid = p.ticker_id where t.oid in (1,3) group by t.oid,t.ticker;
 
 ; (defun match-demo (m)
 ;   (match m

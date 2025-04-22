@@ -9,11 +9,14 @@
     "local-time"
     "parse-number"
     "trivia"
-    "log4cl")
+    "log4cl"
+    "cl-redis")
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")
-                   (:file "janitor/types")
+                   (:file "janitor/stockmarket/stockpurchase" :depends-on ("janitor/common"))
+                   (:file "janitor/stockmarket/stockprice" :depends-on ("janitor/common"))
+                   (:file "janitor/stockmarket/util")
                    (:file "janitor/yahoo" :depends-on ("janitor/common"))
                    (:file "janitor/main"
                       :depends-on

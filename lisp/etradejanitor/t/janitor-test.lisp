@@ -13,7 +13,8 @@
   (:local-nicknames
     (#:ma #:janitor/main)
     (#:ya #:janitor/yahoo)
-    (#:ty #:janitor/types)
+    ;(#:ty #:janitor/types)
+    (#:sprice #:janitor/stockmarket/stockprice)
     (#:parser #:janitor/parser)))
 
 (in-package :etradejanitor/tests/janitor-test)
@@ -25,7 +26,7 @@
 
 
 (defvar expected
-  (ty::make-stockprice
+  (sprice::make-stockprice
     :ticker 3
     :dx (date 2025 3 28)
     :opn 317.1
@@ -89,9 +90,9 @@
   (testing "Stockprice"
     (clet
       (actual
-        (ty:mk-stockprice 3
+        (sprice:mk-stockprice 3
           '("2025-03-28 00:00:00+00:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
-      (ok (ty:stockprice-equals actual expected)))))
+      (ok (sprice:stockprice-equals actual expected)))))
 
 (deftest test-parser
   (testing "Parse stockprices"
@@ -108,14 +109,14 @@
          result (parser:cut-off items 3 tm)
          lx (length result))
         (ok (= 6 lx))
-        (ok (timestamp= march-28 (ty:s-dx (aref result 0))))
-        (ok (timestamp= march-21 (ty:s-dx (aref result (1- lx))))))
+        (ok (timestamp= march-28 (sprice:s-dx (aref result 0))))
+        (ok (timestamp= march-21 (sprice:s-dx (aref result (1- lx))))))
       (clet*
         (tm (date 2025 3 28)
          result (parser:cut-off items 3 tm)
          lx (length result))
         (ok (= 1 lx))
-        (ok (timestamp= march-28 (ty:s-dx (aref result 0)))))
+        (ok (timestamp= march-28 (sprice:s-dx (aref result 0)))))
       (clet*
         (tm (date 2025 3 30)
         result (parser:cut-off items 3 tm))
