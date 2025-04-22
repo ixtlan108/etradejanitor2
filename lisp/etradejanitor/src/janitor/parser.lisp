@@ -2,7 +2,8 @@
   (:use :cl)
   (:local-nicknames
     (#:com #:janitor/common)
-    (#:ty #:janitor/types))
+    ;(#:ty #:janitor/types))
+    (#:sprice #:janitor/stockmarket/stockprice))
   (:import-from :local-time #:timestamp<)
   (:import-from :janitor/common
     #:clet
@@ -29,10 +30,10 @@
 (defun mk-stockprice-fn (ticker-oid cut-off-date)
   (clet (hit nil)
     (fn (row)
-      (clet (price (ty:mk-stockprice ticker-oid row))
+      (clet (price (sprice:mk-stockprice ticker-oid row))
         (if hit
           nil
-          (clet (cur-dx (ty:s-dx price))
+          (clet (cur-dx (sprice:s-dx price))
             (if (timestamp< cur-dx cut-off-date)
               (progn
                 (setq hit t)

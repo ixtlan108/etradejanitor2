@@ -1,7 +1,7 @@
 (defpackage janitor/main
   (:use :cl)
   (:import-from :local-time #:timestamp<)
-  (:import-from :janitor/types
+  (:import-from :janitor/stockmarket/stockprice
     #:s-dx)
   (:import-from :janitor/common
     #:cache
@@ -58,11 +58,17 @@
 (defparameter tier-1
   '("NHY" "STB" "YAR"))
 
+; 1, 3, 14
+
 (defparameter tier-2
   '("AKSO" "DNB" "GJF" "ORK" "TOM"))
 
+; 18,19,21,9,17
+
 (defparameter tier-3
   '("BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
+
+; 27,26,20,28,29,23,16
 
 ;(defvar tickers-all ())
 
@@ -77,7 +83,6 @@
   (getf *cfg* key))
 
 (defun validate-cut-offs (co dx)
-  (prn-cfg)
   (if (cfg-get :skip-validate)
     (list :status :ok :result co)
     (progn
@@ -118,7 +123,7 @@
       (list :status :empty-dx))))
 
 (defun parse-tickers (ht-tdx tickers)
-  (clet (remaining '())
+  (let ((remaining '()))
     (dolist (ticker tickers)
       (clet (m (parse-ticker ticker ht-tdx))
         (match m
@@ -181,21 +186,13 @@
 (defun download-tickers (tix)
   (yahoo:download-tickers (funcall tdx) tix))
 
-(defun download-all ()
+(defun download-all (&key (i-tdx nil))
+  (if i-tdx
+    (funcall tdx :invalidate t))
   (clet (tix (concatenate 'list tier-1 tier-2 tier-3))
     (yahoo:download-tickers (funcall tdx) tix)))
 
-
-; (defun copy-ht-item (new-ht ticker key value)
-;   (format t "~S ~S ~S => ~S~%"
-;           new-ht ticker key value))
-
-; (defun copy-ht-items (ht)
-;   (clet*
-;     (new-ht (make-hash-table :test 'equal)
-;     func (partial #'copy-ht-item new-ht))
-;       (maphash func ht "YAR")))
-
+;select t.oid,t.ticker,max(p.dx) from stockmarket.stockprice p join stockmarket.stocktickers t on t.oid = p.ticker_id where t.oid in (1,3) group by t.oid,t.ticker;
 
 ; (defun match-demo (m)
 ;   (match m

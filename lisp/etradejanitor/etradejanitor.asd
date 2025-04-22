@@ -14,6 +14,7 @@
                 :components
                   ((:file "janitor/common")
                    (:file "janitor/types")
+                   (:file "janitor/stockmarket/stockprice" :depends-on ("janitor/common"))
                    (:file "janitor/yahoo" :depends-on ("janitor/common"))
                    (:file "janitor/main"
                       :depends-on
