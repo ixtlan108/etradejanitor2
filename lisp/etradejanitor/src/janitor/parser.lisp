@@ -12,6 +12,7 @@
     #:*home*)
   (:export
     #:parse
+    #:parse-spot
     #:cut-off
     #:parse-cut-off))
 
@@ -62,7 +63,6 @@
         (oid (gethash ticker ticker-oid-ht)))
     (if (uiop:file-exists-p csv-name)
       (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name))))
-      ;(first (nreverse (com:read-csv csv-name)))
       nil)))
 
 ; 22.1.4. Standard Dispatching Macro Character Syntax

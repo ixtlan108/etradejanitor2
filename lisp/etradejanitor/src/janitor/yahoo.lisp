@@ -48,4 +48,4 @@
     (download-ticker ht-tdx ticker)))
 
 (defun download-spot (ticker)
-  (uiop:run-program (list python3 yahoo-python "-x" ticker) :output :string))
+  (uiop:run-program (list python3 yahoo-python "-t" ticker "-x") :output :string))
