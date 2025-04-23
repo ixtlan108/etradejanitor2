@@ -3,21 +3,20 @@
   (:import-from :janitor/common #:clet #:clet*)
   (:import-from :local-time #:today)
   (:import-from :janitor/common
-    #:clet
-    #:clet
     #:between
     #:diff-days)
   (:export
     #:download-tickers
+    #:download-spot
     #:yahoo-period))
 
 (in-package :janitor/yahoo)
 
 
 (defun yahoo-period (start-date &key (end-date nil))
-  (clet*
-    (dt (if (null end-date) (today) end-date)
-     dd (diff-days start-date dt))
+  (let
+    ((dt (if (null end-date) (today) end-date))
+     (dd (diff-days start-date dt)))
     (cond
       ((between 0 1.0 dd) "1d")
       ((between 1.0 5.0 dd) "5d")
@@ -35,10 +34,10 @@
 ;(defvar python3 "/opt/homebrew/bin/python3")
 
 (defun download-ticker (ht-tdx ticker)
-  (clet
-    (cur-dx (gethash ticker ht-tdx))
+  (let
+    ((cur-dx (gethash ticker ht-tdx)))
     (if cur-dx
-      (clet (yp (yahoo-period cur-dx))
+      (let ((yp (yahoo-period cur-dx)))
         (format t "Ticker: ~a, period: ~a~%" ticker yp)
         (finish-output)
         (unless (equal "na" yp)
@@ -47,3 +46,6 @@
 (defun download-tickers (ht-tdx tickers)
   (dolist (ticker tickers)
     (download-ticker ht-tdx ticker)))
+
+(defun download-spot (ticker)
+  (uiop:run-program (list python3 yahoo-python "-x" ticker) :output :string))

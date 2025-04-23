@@ -38,15 +38,17 @@ TICKERS = [
 
 PERIOD = "1d"
 
-FEED = "/home/rcs/opt/etradejanitor2/feed"
+# HOME = "/Users/zeus/Projects/lisp/etradejanitor2"
+HOME = "/home/rcs/opt/etradejanitor2"
 
-# FEED = "/Users/zeus/Projects/lisp/etradejanitor2/feed"
+FEED = "%s/feed" % HOME
 
+SPOT_FEED = "%s/spot" % HOME
 
-def save_to_cvs(t,period):
+def download(t,period,feed):
   try:
       print("%s" % t)
-      f = open("%s/%s.csv" % (FEED,t), "w")
+      f = open("%s/%s.csv" % (feed,t), "w")
       t = y.Ticker("%s.OL" % t)
       h = t.history(period=period)
       csv = h.to_csv()
@@ -54,9 +56,6 @@ def save_to_cvs(t,period):
       f.close()
   except:
       print("Could not download: %s" % t)
-
-def demo():
-  save_to_cvs("NHY","1mo")
 
 VALID_PERIODS = ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y"]
 
@@ -66,19 +65,26 @@ def validate_period(value):
   else:
     return False
 
+def save_to_cvs(t,period):
+  download(t,period,FEED)
+
+def spot(t):
+  download(t,"1d",SPOT_FEED)
+
 if __name__ == '__main__':
   parser = OptionParser()
   parser.add_option("-t","--ticker", dest="ticker", metavar="TICKER", help="Stock ticker")
   parser.add_option("-p","--period", dest="period", metavar="YAHOO_PERIOD", help="Valid periods: 1d, 5d, 1m, 3m, 6m, 1y, 2y, 5y, 10y")
-
-  #parser.add_option("--ticker", action="store_true", default=False,
-  #                  help="Run demo. Default: False")
+  parser.add_option("-x","--spot", action="store_true", default=False, help="Download Spot. Default: False")
 
   (opts, args) = parser.parse_args()
-  print (opts.ticker)
-  if validate_period(opts.period) != True:
-    print ("Invalid period: ",opts.period )
-    sys.exit()
+
+  if opts.spot == True:
+    spot(opts.ticker)
   else:
-    print (opts.period)
-    save_to_cvs(opts.ticker, opts.period)
+    if validate_period(opts.period) != True:
+      print ("Invalid period: ",opts.period )
+      sys.exit()
+    else:
+      print (opts.period)
+      save_to_cvs(opts.ticker, opts.period)
