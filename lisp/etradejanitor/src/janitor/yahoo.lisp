@@ -14,7 +14,7 @@
 
 
 (defun yahoo-period (start-date &key (end-date nil))
-  (let
+  (let*
     ((dt (if (null end-date) (today) end-date))
      (dd (diff-days start-date dt)))
     (cond

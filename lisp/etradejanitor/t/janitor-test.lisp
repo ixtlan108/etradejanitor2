@@ -142,6 +142,14 @@
     (setf (gethash "NHY" ht) pts)
     ht))
 
+(deftest test-parser-skip-today
+  (testing "Parse stockprices skipping today"
+    (let* ((parser::*feed* test-feed)
+           (tdx (create-tdx-nhy "2025-01-08"))
+           (result (ma::parse-ticker "NHY" tdx :skip-today t)))
+      (ok (equal (getf result :status) :ok))
+      (ok (equal (length (getf result :result)) 2)))))
+
 (deftest test-main
   (testing "process-ticker"
     (clet*

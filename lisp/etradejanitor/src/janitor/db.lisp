@@ -7,8 +7,6 @@
   (:import-from :local-time
     #:parse-timestring
     #:timestamp+)
-  (:import-from :janitor/stockmarket/util
-    #:ticker-oid-ht)
   (:import-from :janitor/stockmarket/stockprice
     #:s-ticker
     #:s-dx

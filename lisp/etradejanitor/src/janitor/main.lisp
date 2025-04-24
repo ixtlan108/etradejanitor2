@@ -14,6 +14,8 @@
     #:vec-last
     #:iso-8601-string)
   (:import-from :trivia #:match)
+  (:import-from :janitor/stockmarket/util
+    #:ticker-oid-ht)
   (:local-nicknames
     (#:db #:janitor/db)
     (#:yahoo #:janitor/yahoo)
@@ -22,39 +24,6 @@
     #:run))
 
 (in-package :janitor/main)
-
-(defvar ticker-oid-ht
-  (clet (ht (make-hash-table :test 'equal))
-    (setf (gethash "NHY" ht) 1)
-    (setf (gethash "EQNR" ht) 2)
-    (setf (gethash "YAR" ht) 3)
-    (setf (gethash "SDRL" ht) 4)
-    (setf (gethash "ACY" ht) 5)
-    (setf (gethash "TEL" ht) 6)
-    (setf (gethash "OBX" ht) 7)
-    (setf (gethash "MHG" ht) 8)
-    (setf (gethash "ORK" ht) 9)
-    (setf (gethash "DNBNOR" ht) 10)
-    (setf (gethash "REC" ht) 11)
-    (setf (gethash "PGS" ht) 12)
-    (setf (gethash "RCL" ht) 13)
-    (setf (gethash "STB" ht) 14)
-    (setf (gethash "TAA" ht) 15)
-    (setf (gethash "TGS" ht) 16)
-    (setf (gethash "TOM" ht) 17)
-    (setf (gethash "AKSO" ht) 18)
-    (setf (gethash "DNB" ht) 19)
-    (setf (gethash "DNO" ht) 20)
-    (setf (gethash "GJF" ht) 21)
-    (setf (gethash "NSG" ht) 22)
-    (setf (gethash "SUBC" ht) 23)
-    (setf (gethash "OSEBX" ht) 24)
-    (setf (gethash "AKERBP" ht) 25)
-    (setf (gethash "BWLPG" ht) 26)
-    (setf (gethash "BAKKA" ht) 27)
-    (setf (gethash "GOGL" ht) 28)
-    (setf (gethash "NAS" ht) 29)
-    ht))
 
 (defparameter tier-1
   '("NHY" "STB" "YAR"))
@@ -77,7 +46,7 @@
 ;(defvar tickers-all ())
 
 (defparameter *cfg*
-  (list :skip-db nil :invalidate-tdx nil :skip-validate nil))
+  (list :skip-db nil :invalidate-tdx nil :skip-validate nil :skip-today nil))
 
 (defun prn-cfg ()
   (format t "~{~a ~}~%" *cfg*))
@@ -112,24 +81,25 @@
             (princ (format nil "ticker: ~a => status: ~a, err: ~a~%" (getf c :ticker) (getf c :status) (getf c :err)))
             (princ (format nil "ticker: ~a => status: ~a~%" (getf c :ticker) (getf c :status)))))))))
 
-(defun parse-ticker (ticker ht)
+(defun parse-ticker (ticker ht &key (skip-today))
   (let ((cur-dx (gethash ticker ht)))
     (if cur-dx
       (let
         ((oid (gethash ticker ticker-oid-ht))
          (items (pa:parse ticker)))
         (if items
-          (let ((cut-offs (pa:cut-off items oid cur-dx)))
-            (if (>0 cut-offs)
-              (validate-cut-offs cut-offs cur-dx)
-              (list :status :empty-cutoffs)))
+          (let ((itemsx (if skip-today (rest items) items)))
+            (let ((cut-offs (pa:cut-off itemsx oid cur-dx)))
+              (if (>0 cut-offs)
+                (validate-cut-offs cut-offs cur-dx)
+                (list :status :empty-cutoffs))))
           (list :status :missing-csv)))
       (list :status :empty-dx))))
 
-(defun parse-tickers (ht-tdx tickers)
+(defun parse-tickers (ht-tdx tickers skip-today)
   (let ((remaining '()))
     (dolist (ticker tickers)
-      (clet (m (parse-ticker ticker ht-tdx))
+      (clet (m (parse-ticker ticker ht-tdx :skip-today skip-today))
         (match m
           ((list :status :empty-cutoffs)
             (push (list :status :empty-cutoffs :ticker ticker) remaining))
@@ -156,7 +126,7 @@
       (db:insert-stockprice (getf ticker :rows)))))
 
 (defun run (tickers)
-  (let ((tix (parse-tickers (funcall tdx) tickers)))
+  (let ((tix (parse-tickers (funcall tdx) tickers (cfg-get :skip-today))))
     (print-status tix)
     (unless (cfg-get :skip-db)
       (print "Inserting prices into database...")
@@ -169,22 +139,23 @@
     (funcall tdx :invalidate t))
   (run tier))
 
-(defun config-cfg (skip-db invalidate-tdx skip-validate)
+(defun config-cfg (skip-db invalidate-tdx skip-validate skip-today)
   (list
     :skip-db skip-db
     :invalidate-tdx invalidate-tdx
-    :skip-validate skip-validate))
+    :skip-validate skip-validate
+    :skip-today skip-today))
 
-(defun run-tier-1 (&key (s-db nil) (i-tdx nil) (s-val nil))
-  (let ((*cfg* (config-cfg s-db i-tdx s-val)))
+(defun run-tier-1 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-1)))
 
-(defun run-tier-2 (&key (s-db nil) (i-tdx nil) (s-val nil))
-  (let ((*cfg* (config-cfg s-db i-tdx s-val)))
+(defun run-tier-2 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-2)))
 
-(defun run-tier-3 (&key (s-db nil) (i-tdx nil) (s-val nil))
-  (let ((*cfg* (config-cfg s-db i-tdx s-val)))
+(defun run-tier-3 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-3)))
 
 (defun download-tickers (tix)
@@ -202,8 +173,9 @@
 (defun opening-price (ticker)
   (let ((spot (pa:parse-spot ticker)))
     (when spot
-      (let ((opn (s-opn spot)))
-        (redis:red-hset "openingprices" ticker opn)))))
+      (let ((opn (s-opn spot))
+            (oid (gethash ticker ticker-oid-ht)))
+        (redis:red-hset "openingprices" oid opn)))))
 
 (defun opening-prices (tickers &key (db 0))
   (redis:with-connection (:host redis-host)
@@ -212,16 +184,16 @@
       (opening-price ticker))))
 
 (defun opening-prices-tier-1  (&key (db 0))
-  (opening-prices tier-1 db))
+  (opening-prices tier-1 :db db))
 
 (defun opening-prices-tier-2  (&key (db 0))
-  (opening-prices tier-2 db))
+  (opening-prices tier-2 :db db))
 
 (defun opening-prices-tier-3  (&key (db 0))
-  (opening-prices tier-3 db))
+  (opening-prices tier-3 :db db))
 
 (defun opening-prices-all (&key (db 0))
-  (opening-prices tier-all db))
+  (opening-prices tier-all :db db))
 
 (defun spot (ticker)
   (yahoo:download-spot ticker))
