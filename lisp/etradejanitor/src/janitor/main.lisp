@@ -12,12 +12,14 @@
     #:partial
     #:fn
     #:vec-last
+    #:print-hash
     #:iso-8601-string)
   (:import-from :trivia #:match)
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:local-nicknames
     (#:db #:janitor/db)
+    (#:rutil #:janitor/redisutil)
     (#:yahoo #:janitor/yahoo)
     (#:pa #:janitor/parser))
   (:export
@@ -26,17 +28,17 @@
 (in-package :janitor/main)
 
 (defparameter tier-1
-  '("NHY" "STB" "YAR"))
+  (list "NHY" "STB" "YAR"))
 
 ; 1, 3, 14
 
 (defparameter tier-2
-  '("AKSO" "DNB" "GJF" "ORK" "TOM"))
+  (list "AKSO" "DNB" "GJF" "ORK" "TOM"))
 
 ; 18,19,21,9,17
 
 (defparameter tier-3
-  '("BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
+  (list "BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
 
 (defparameter tier-all
   (concatenate 'list tier-1 tier-2 tier-3))
@@ -58,13 +60,12 @@
 (defun validate-cut-offs (co dx)
   (if (cfg-get :skip-validate)
     (list :status :ok :result co)
-    (progn
-      (let
-        ((start-date (s-dx (vec-last co))))
-          (if (timestamp< dx start-date)
-            (list :status :start-date-error
-                  :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
-            (list :status :ok :result co))))))
+    (let
+      ((start-date (s-dx (vec-last co))))
+        (if (timestamp< dx start-date)
+          (list :status :start-date-error
+                :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
+          (list :status :ok :result co)))))
 
 (defun print-status (cut-offs)
   (dolist (c cut-offs)
@@ -123,7 +124,8 @@
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
-      (db:insert-stockprice (getf ticker :rows)))))
+      (db:insert-stockprice (getf ticker :rows))))
+  (funcall tdx :invalidate t))
 
 (defun run (tickers)
   (let ((tix (parse-tickers (funcall tdx) tickers (cfg-get :skip-today))))
@@ -168,32 +170,18 @@
 
 ; (redis:with-connection (:host "172.20.1.2") (redis:red-select 4) (redis:red-hset "openingprice" "YAX" "34.34"))
 
-(defvar redis-host "172.20.1.2")
-
-(defun opening-price (ticker)
-  (let ((spot (pa:parse-spot ticker)))
-    (when spot
-      (let ((opn (s-opn spot))
-            (oid (gethash ticker ticker-oid-ht)))
-        (redis:red-hset "openingprices" oid opn)))))
-
-(defun opening-prices (tickers &key (db 0))
-  (redis:with-connection (:host redis-host)
-    (redis:red-select db)
-    (dolist (ticker tickers)
-      (opening-price ticker))))
 
 (defun opening-prices-tier-1  (&key (db 0))
-  (opening-prices tier-1 :db db))
+  (rutil:opening-prices tier-1 :db db))
 
 (defun opening-prices-tier-2  (&key (db 0))
-  (opening-prices tier-2 :db db))
+  (rutil:opening-prices tier-2 :db db))
 
 (defun opening-prices-tier-3  (&key (db 0))
-  (opening-prices tier-3 :db db))
+  (rutil:opening-prices tier-3 :db db))
 
 (defun opening-prices-all (&key (db 0))
-  (opening-prices tier-all :db db))
+  (rutil:opening-prices tier-all :db db))
 
 (defun spot (ticker)
   (yahoo:download-spot ticker))
@@ -213,6 +201,13 @@
 
 (defun spots-all ()
   (spots tier-all))
+
+(defun prn-tdx (&key (i-tdx nil))
+  (if i-tdx
+    (funcall tdx :invalidate t))
+  (print-hash (funcall tdx)))
+
+;(asdf:component-pathname (asdf:find-system :etradejanitor))
 
 ; (defun spot (ticker &key (redis nil) (db 0))
 ;   (yahoo:download-spot ticker)

@@ -6,6 +6,7 @@
   (:export
     #:stockprice
     #:mk-stockprice
+    #:make-stockprice
     #:stockprice-equals
     #:s-ticker
     #:s-dx

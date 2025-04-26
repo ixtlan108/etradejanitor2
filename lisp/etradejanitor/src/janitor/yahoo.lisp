@@ -30,8 +30,9 @@
 
 (defvar yahoo-python (format nil "~a/python/yahoo.py" janitor/common:*home*))
 
-(defvar python3 "/usr/bin/python3")
-;(defvar python3 "/opt/homebrew/bin/python3")
+;(defparameter python3 "/usr/bin/python3")
+(defparameter python3 "/home/rcs/opt/etradejanitor2/python/venv/bin/python3")
+;(defparameter python3 "/opt/homebrew/bin/python3")
 
 (defun download-ticker (ht-tdx ticker)
   (let
@@ -46,6 +47,14 @@
 (defun download-tickers (ht-tdx tickers)
   (dolist (ticker tickers)
     (download-ticker ht-tdx ticker)))
+
+(defun show-yahoo-periods (ht-tdx tickers)
+  (map 'list
+    (lambda (ticker)
+      (let ((cur-dx (gethash ticker ht-tdx)))
+          (if cur-dx
+            (yahoo-period cur-dx))))
+    tickers))
 
 (defun download-spot (ticker)
   (uiop:run-program (list python3 yahoo-python "-t" ticker "-x") :output :string))

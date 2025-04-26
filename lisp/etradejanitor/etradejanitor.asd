@@ -9,22 +9,39 @@
     "local-time"
     "parse-number"
     "trivia"
-    "log4cl"
     "cl-redis")
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")
-                   (:file "janitor/stockmarket/stockpurchase" :depends-on ("janitor/common"))
+                   (:file "janitor/stockmarket/stockpurchase" :depends-on ("janitor/common" "janitor/stockmarket/util"))
                    (:file "janitor/stockmarket/stockprice" :depends-on ("janitor/common"))
                    (:file "janitor/stockmarket/util")
                    (:file "janitor/yahoo" :depends-on ("janitor/common"))
                    (:file "janitor/main"
                       :depends-on
-                        ("janitor/common"
+                       ("janitor/common"
                         "janitor/db"
+                        "janitor/redisutil"
                         "janitor/parser"))
-                   (:file "janitor/db" :depends-on ("janitor/common"))
-                   (:file "janitor/parser" :depends-on ("janitor/common")))))
+                   (:file "janitor/testsetup"
+                      :depends-on
+                       ("janitor/stockmarket/stockprice"
+                        "janitor/redisutil"))
+                   (:file "janitor/db"
+                      :depends-on
+                       ("janitor/common"
+                        "janitor/stockmarket/stockprice"
+                        "janitor/stockmarket/stockpurchase"))
+                   (:file "janitor/redisutil"
+                      :depends-on
+                       ("janitor/common"
+                        "janitor/stockmarket/stockprice"
+                        "janitor/parser"))
+                   (:file "janitor/parser"
+                      :depends-on
+                       ("janitor/stockmarket/stockprice"
+                        "janitor/stockmarket/util"
+                        "janitor/common")))))
   :description ""
   :in-order-to ((test-op (test-op "etradejanitor/tests"))))
 

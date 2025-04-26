@@ -34,9 +34,9 @@
 
 (in-package :janitor/db)
 
-(defparameter host "172.20.1.6")
+;(defparameter host "172.20.1.6")
+(defparameter host "172.20.1.7")
 ;(defparameter host "localhost")
-;(defparameter host "172.20.1.7")
 
 (defun my-connect ()
   "Start the database connection."
@@ -79,9 +79,6 @@
 (defprepared insert-stockprice-sql
   "insert into stockmarket.stockprice (ticker_id,dx,opn,hi,lo,cls,vol) values ($1,$2,$3,$4,$5,$6,$7)")
 
-(defprepared insert-stockpurchase-sql
-  "insert into stockmarket.stock_purchase (ticker_id,dx,price,volume) values ($1,$2,$3,$4)")
-
 (defun insert-stockprice (rows)
   (my-connect)
   (with-transaction ()
@@ -95,6 +92,9 @@
         cls (s-cls r)
         vol (s-vol r))
         (funcall 'insert-stockprice-sql oid dx opn hi lo cls vol)))))
+
+(defprepared insert-stockpurchase-sql
+  "insert into stockmarket.stock_purchase (ticker_id,unix_time,price,volume) values ($1,$2,$3,$4)")
 
 (defun insert-stockpurchase (p)
   (my-connect)

@@ -8,7 +8,7 @@
     #:ticker-oid-ht)
   (:import-from :janitor/common
     #:clet
-    #:clet* #:fn
+    #:clet*
     #:*home*)
   (:export
     #:parse
@@ -37,7 +37,7 @@
 
 (defun mk-stockprice-fn (ticker-oid cut-off-date)
   (clet (hit nil)
-    (fn (row)
+    (lambda (row)
       (clet (price (sprice:mk-stockprice ticker-oid row))
         (if hit
           nil

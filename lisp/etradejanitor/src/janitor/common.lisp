@@ -16,7 +16,6 @@
     #:between
     #:float-equals-p
     #:print-hash
-    #:fn
     #:>0
     #:vec-last
     #:partial
@@ -30,6 +29,7 @@
 (defparameter *home*
   (uiop:native-namestring "~/opt/etradejanitor2"))
   ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+
 
 (defmacro cache(fn)
   (let ((mydata (gensym)))
@@ -64,8 +64,8 @@
 (defun gethx (ht key)
   (gethash key ht))
 
-(defmacro fn (&rest forms)
-  `(lambda ,@forms))
+;(defmacro fn (&rest forms)
+;  `(lambda ,@forms))
 
 (defmacro clet (bindings &body body)
   `(let ,(loop for (a b) on bindings by #'cddr collect (list a b))
@@ -128,6 +128,59 @@
 (defun partial (function &rest args)
   (lambda (&rest more-args)
     (apply function (append args more-args))))
+
+;;;--------------------------------- with-gensyms macro ----------------------------
+(defmacro with-gensyms (syms &body body)
+  `(let
+    ,(mapcar
+      (lambda (s) `(,s (gensym))) syms)
+        ,@body))
+;;;--------------------------------- END with-gensyms macro ----------------------------
+
+;;;--------------------------------- with-struct macro ----------------------------
+
+; (defmacro with-struct ((name . fields) struct &body body)
+;   (let ((gs (gensym)))
+;     `(let ((,gs ,struct))
+;       (let ,(mapcar (lambda (f)
+;               `(,f (,(symb name f) ,gs)))
+;       fields)
+;       ,@body))))
+
+; (defun mkstr (&rest args)
+;   (with-output-to-string (s)
+;     (dolist (a args) (princ a s))))
+
+; (defun symb (&rest args)
+;   (values (intern (apply #'mkstr args))))
+
+;;;--------------------------------- END with-struct macro ----------------------------
+
+;;;--------------------------------- fn macro ----------------------------
+
+(defmacro fn (expr) `#',(rbuild expr))
+
+(defun rbuild (expr)
+  (if (or (atom expr) (eq (car expr) 'lambda))
+    expr
+    (if (eq (car expr) 'compose)
+      (build-compose (cdr expr))
+      (build-call (car expr) (cdr expr)))))
+
+(defun build-call (op fns)
+  (let ((g (gensym)))
+    `(lambda (,g) (,op ,@(mapcar #'(lambda (f) `(,(rbuild f) ,g))
+      fns)))))
+
+(defun build-compose (fns)
+  (let ((g (gensym)))
+    `(lambda (,g) ,(labels ((rec (fns)
+                      (if fns
+                        `(,(rbuild (car fns))
+                          ,(rec (cdr fns)))
+                        g)))
+    (rec fns)))))
+;;;--------------------------------- END fn macro ----------------------------
 
 ; (map 'list (partial '+ 2) (list 1 2 3)) ;=> (3 4 5)
 ;
