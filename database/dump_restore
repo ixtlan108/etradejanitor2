@@ -1,0 +1,10 @@
+Dump:
+  1. docker exec -it <postgres container> /bin/sh
+  2. cd /home/rcs/database/database_dumps
+  3. su postgres
+  4. pg_dump trader > trader.sql
+
+  NB! /home/rcs/database/database_dumps must be chmod 777
+
+Restore:
+  1. psql -h hostname -d databasename -U username -f file.sql

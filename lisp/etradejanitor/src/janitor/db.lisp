@@ -25,9 +25,11 @@
     #:disconnect-toplevel
     #:query
     #:defprepared
+    #:execute-file
     #:with-transaction
     #:*database*)
   (:export
+    #:current-migration
     #:ticker-dx
     #:insert-stockprice
     #:insert-stockpurchase))
@@ -104,3 +106,21 @@
           (price (p-price p))
           (vol (p-vol p)))
     (funcall 'insert-stockpurchase-sql oid dx price vol))))
+
+(defprepared current-migration-sql
+  "select max(version) from stockmarket.migrations")
+
+(defun current-migration ()
+  (my-connect)
+  (with-transaction ()
+    (funcall 'current-migration-sql)))
+
+(defprepared insert-migration-sql
+  "insert into stockmarket.migrations (version,comment) values ($1,$2)")
+
+
+(defun insert-migration-version (unix-time comment sql-file)
+  (my-connect)
+  (with-transaction ()
+    (execute-file sql-file t)
+    (funcall 'insert-migration-sql unix-time comment)))

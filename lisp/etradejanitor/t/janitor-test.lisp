@@ -13,7 +13,7 @@
   (:local-nicknames
     (#:ma #:janitor/main)
     (#:ya #:janitor/yahoo)
-    ;(#:ty #:janitor/types)
+    (#:mig #:janitor/migrations)
     (#:sprice #:janitor/stockmarket/stockprice)
     (#:parser #:janitor/parser)))
 
@@ -24,6 +24,8 @@
 (defparameter test-feed
   (format nil "~a/lisp/etradejanitor/t/resources" *home*))
 
+(defparameter test-feed-mig
+  (format nil "~a/lisp/etradejanitor/t/resources/migrations" *home*))
 
 (defvar expected
   (sprice::make-stockprice
@@ -54,6 +56,36 @@
 (defvar march-2026-30 (date 2026 3 30))
 (defvar aug-2027-2 (date 2027 8 2))
 
+(defun test-mig-path (unix-time comment suffix)
+  (let ((p (pathname (format nil "~a/~a__~a.sql" test-feed-mig unix-time suffix))))
+    (list :unix unix-time :comment comment :sql p)))
+        
+
+(deftest test-migrations
+  (testing "migrations"
+    (let* ((mig::*feed* test-feed-mig)
+           (result (mig:get-migrations 1746602800)))
+      (ok (= 2 (hash-table-count result)))
+      (let ((p1 (gethash 1746702000 result)))
+        (ok (equal (test-mig-path 1746702000 "The next one" "the_next_one") p1)))))
+  (testing "migrations edge case"
+    (let* ((mig::*feed* test-feed-mig)
+           (result (mig:get-migrations 1746702000)))
+      (ok (= 1 (hash-table-count result)))
+      (let ((p2 (gethash 1746902800 result)))
+        (ok (equal (test-mig-path 1746902800 "The last one" "the_last_one") p2)))))
+  (testing "migrations sorted keys"
+    (let* ((mig::*feed* test-feed-mig)
+           (mig-ht (mig:get-migrations 1745000000))
+           (keys (mig::get-migrations-keys mig-ht)))
+      (ok (equal (list 1746502000 1746702000 1746902800) keys))))
+  (testing "migrations no sql files left"
+    (let* ((mig::*feed* test-feed-mig)
+           (mig-ht (mig:get-migrations 1746903000))
+           (keys (mig::get-migrations-keys mig-ht)))
+      (ok (= 0 (hash-table-count mig-ht)))
+      (ok (equal nil keys)))))
+      
 (deftest test-yahoo
   (testing "yahoo-period"
     (ok (equal (ya:yahoo-period jan-1 :end-date dec-2024-30) "na"))
@@ -173,3 +205,4 @@
         (tdx-3 (create-tdx-nhy "2024-12-30")
           result-3 (ma::parse-ticker "NHY" tdx-3))
         (ok (equal (getf result-3 :status) :start-date-error))))))
+

@@ -13,8 +13,13 @@
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")
-                   (:file "janitor/stockmarket/stockpurchase" :depends-on ("janitor/common" "janitor/stockmarket/util"))
-                   (:file "janitor/stockmarket/stockprice" :depends-on ("janitor/common"))
+                   (:file "janitor/stockmarket/stockpurchase" 
+                      :depends-on 
+                      ("janitor/common" 
+                       "janitor/stockmarket/util"))
+                   (:file "janitor/stockmarket/stockprice" 
+                      :depends-on 
+                        ("janitor/common"))
                    (:file "janitor/stockmarket/util")
                    (:file "janitor/yahoo" :depends-on ("janitor/common"))
                    (:file "janitor/main"
@@ -37,6 +42,10 @@
                        ("janitor/common"
                         "janitor/stockmarket/stockprice"
                         "janitor/parser"))
+                   (:file "janitor/migrations"
+                      :depends-on
+                       ("janitor/common"
+                        "janitor/db"))
                    (:file "janitor/parser"
                       :depends-on
                        ("janitor/stockmarket/stockprice"
