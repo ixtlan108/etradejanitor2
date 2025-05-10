@@ -13,7 +13,7 @@
   (:local-nicknames
     (#:ma #:janitor/main)
     (#:ya #:janitor/yahoo)
-    ;(#:ty #:janitor/types)
+    (#:mig #:janitor/migrations)
     (#:sprice #:janitor/stockmarket/stockprice)
     (#:parser #:janitor/parser)))
 
@@ -24,6 +24,8 @@
 (defparameter test-feed
   (format nil "~a/lisp/etradejanitor/t/resources" *home*))
 
+(defparameter test-feed-mig
+  (format nil "~a/lisp/etradejanitor/t/resources/migrations" *home*))
 
 (defvar expected
   (sprice::make-stockprice
@@ -53,6 +55,17 @@
 (defvar jan-2026-1 (date 2026 1 1))
 (defvar march-2026-30 (date 2026 3 30))
 (defvar aug-2027-2 (date 2027 8 2))
+
+(defun test-mig-path (unix-time)
+  (pathname (format nil "~a/~a.sql" test-feed-mig unix-time)))
+
+(deftest test-migrations
+  (testing "migrations"
+    (let* ((mig::*feed* test-feed-mig)
+           (result (mig:get-migrations)))
+      (ok (= 3 (hash-table-count result)))
+      (let ((p1 (gethash 1746902800 result)))
+        (ok (equal (test-mig-path 1746902800) p1))))))
 
 (deftest test-yahoo
   (testing "yahoo-period"

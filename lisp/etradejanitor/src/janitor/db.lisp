@@ -104,3 +104,19 @@
           (price (p-price p))
           (vol (p-vol p)))
     (funcall 'insert-stockpurchase-sql oid dx price vol))))
+
+(defprepared current-migration-sql
+  "select max(version) from stockmarket.migrations")
+
+(defun current-migration ()
+  (my-connect)
+  (with-transaction ()
+    (funcall 'current-migration-sql)))
+
+(defprepared insert-migration-sql
+  "insert into stockmarket.migrations (unix_time,comment) values ($1,$2)")
+
+(defun insert-migration (unix-time comment)
+  (my-connect)
+  (with-transaction ()
+    (funcall 'insert-migration-sql oid dx price vol)))

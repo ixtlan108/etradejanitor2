@@ -7,8 +7,6 @@
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:import-from :janitor/common
-    #:clet
-    #:clet*
     #:*home*)
   (:export
     #:parse
@@ -36,12 +34,12 @@
 ; ("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")
 
 (defun mk-stockprice-fn (ticker-oid cut-off-date)
-  (clet (hit nil)
+  (let ((hit nil))
     (lambda (row)
-      (clet (price (sprice:mk-stockprice ticker-oid row))
+      (let ((price (sprice:mk-stockprice ticker-oid row)))
         (if hit
           nil
-          (clet (cur-dx (sprice:s-dx price))
+          (let ((cur-dx (sprice:s-dx price)))
             (if (timestamp< cur-dx cut-off-date)
               (progn
                 (setq hit t)
@@ -49,11 +47,11 @@
               price)))))))
 
 (defun cut-off (items ticker-oid cut-off-date)
-  (clet (fx (mk-stockprice-fn ticker-oid cut-off-date))
+  (let ((fx (mk-stockprice-fn ticker-oid cut-off-date)))
     (remove-if #'null (map 'vector fx items))))
 
 (defun parse (ticker)
-  (clet (csv-name (feed-csv-name ticker))
+  (let ((csv-name (feed-csv-name ticker)))
     (if (uiop:file-exists-p csv-name)
       (nreverse (com:read-csv csv-name))
       nil)))
