@@ -1,8 +1,12 @@
 (defpackage janitor/migrations
   (:use :cl)
   (:import-from :janitor/common
+    #:print-hash
     #:*home*)
+  (:local-nicknames
+    (#:db #:janitor/db))
   (:export
+    #:exec-migrations
     #:get-migrations))
 
 (in-package :janitor/migrations)
@@ -11,20 +15,48 @@
 (defvar *feed*
   (format nil "~a/database/migrations" *home*))
 
-(defun get-unix-time-sql (sql-file)
-  (let* ((splits (str:split #\/ (namestring sql-file)))
-         (fname (first (last splits))))
-    (list :unix (parse-integer (first (str:split #\. fname))) :sql sql-file)))
+(defun unix-time-comment (fname_dot_sql)
+  (let* ((splits (str:split "__" fname_dot_sql))
+         (ut (first splits))
+         (comment-parts (str:split #\_ (first (str:split #\. (first (last splits))))))
+         (cap (string-capitalize (first comment-parts)))
+         (comment-partsx (cons cap (rest comment-parts))))
+    (values ut (format nil "~{~A~^ ~}" comment-partsx))))
+
+(defun unix-time-comment-sql (sql-file)
+  (let ((fname_dot_sql (first (last (str:split #\/ (namestring sql-file)))))) ; 12345__this_is_a_comment.sql
+    (multiple-value-bind (ut comment)
+        (unix-time-comment fname_dot_sql)
+      (list :unix (parse-integer ut) :comment comment :sql sql-file))))
 
 (defun get-migrations-list ()
   (let ((sql-files (directory (format nil "~a/*.sql" *feed*))))
-    (mapcar #'get-unix-time-sql sql-files)))
+    (mapcar #'unix-time-comment-sql sql-files)))
 
-(defun get-migrations ()
+(defun get-migrations (cut-off-unix-time)
   (let ((mig (get-migrations-list))
         (result (make-hash-table :test #'equal)))
     (loop for item in mig
       do
-        (setf (gethash (getf item :unix) result) (getf item :sql)))
+        (let ((cur-unix (getf item :unix)))
+          (when (> cur-unix cut-off-unix-time)
+            ;(setf (gethash (getf item :unix) result) (getf item :sql)))))
+            (setf (gethash (getf item :unix) result) item))))
     result))
+
+(defun get-migrations-keys (mig-ht)
+  (let ((keys (loop for key being the hash-key of mig-ht collect key))) 
+    (sort keys #'<)))
+
+(defun exec-migrations ()
+  (let* ((cur-version 0) ;(first (first (db:current-migration))))
+         (migs (get-migrations cur-version))
+         (mig-keys (get-migrations-keys migs)))
+    (format t "Current version: ~a, keys: ~a~%" cur-version mig-keys)
+    (print-hash migs)))
+    ; (dolist (k mig-keys)
+    ;   (let ((cur-sql (gethash k migs)))
+
+
+
 

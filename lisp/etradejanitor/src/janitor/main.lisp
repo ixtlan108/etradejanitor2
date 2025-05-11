@@ -67,7 +67,8 @@
                 :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
           (list :status :ok :result co)))))
 
-(defun print-status (cut-offs)
+(defun print-status (cut-offs) 
+  "cut-offs <- parse-tickers"
   (dolist (c cut-offs)
     (let ((s (getf c :status)))
       (cond

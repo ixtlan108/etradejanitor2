@@ -28,6 +28,7 @@
     #:with-transaction
     #:*database*)
   (:export
+    #:current-migration
     #:ticker-dx
     #:insert-stockprice
     #:insert-stockpurchase))
@@ -114,9 +115,9 @@
     (funcall 'current-migration-sql)))
 
 (defprepared insert-migration-sql
-  "insert into stockmarket.migrations (unix_time,comment) values ($1,$2)")
+  "insert into stockmarket.migrations (version,comment) values ($1,$2)")
 
-(defun insert-migration (unix-time comment)
-  (my-connect)
-  (with-transaction ()
-    (funcall 'insert-migration-sql oid dx price vol)))
+; (defun insert-migration-version (unix-time comment)
+;   (my-connect)
+;   (with-transaction ()
+;     (funcall 'insert-migration-sql oid dx price vol)))
