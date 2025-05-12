@@ -1,6 +1,6 @@
 create table stockmarket.migrations (
   version int4 not null primary key,
-  comment varchar(50) null
+  comment varchar(50) not null
 );
 
 insert into
