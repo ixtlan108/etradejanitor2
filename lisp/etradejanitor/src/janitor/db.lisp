@@ -25,6 +25,7 @@
     #:disconnect-toplevel
     #:query
     #:defprepared
+    #:execute-file
     #:with-transaction
     #:*database*)
   (:export
@@ -117,7 +118,9 @@
 (defprepared insert-migration-sql
   "insert into stockmarket.migrations (version,comment) values ($1,$2)")
 
-; (defun insert-migration-version (unix-time comment)
-;   (my-connect)
-;   (with-transaction ()
-;     (funcall 'insert-migration-sql oid dx price vol)))
+
+(defun insert-migration-version (unix-time comment sql-file)
+  (my-connect)
+  (with-transaction ()
+    (execute-file sql-file t)
+    (funcall 'insert-migration-sql unix-time comment)))

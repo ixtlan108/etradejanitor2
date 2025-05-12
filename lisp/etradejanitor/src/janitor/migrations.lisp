@@ -53,9 +53,10 @@
          (migs (get-migrations cur-version))
          (mig-keys (get-migrations-keys migs)))
     (format t "Current version: ~a, keys: ~a~%" cur-version mig-keys)
-    (print-hash migs)))
-    ; (dolist (k mig-keys)
-    ;   (let ((cur-sql (gethash k migs)))
+    (print-hash migs)
+    (dolist (k mig-keys)
+      (let ((cur-sql (gethash k migs)))
+        (format t "~a ~a~%" (getf cur-sql :unix) (getf cur-sql :comment))))))
 
 
 
