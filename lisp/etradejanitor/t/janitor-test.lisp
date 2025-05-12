@@ -78,7 +78,13 @@
     (let* ((mig::*feed* test-feed-mig)
            (mig-ht (mig:get-migrations 1745000000))
            (keys (mig::get-migrations-keys mig-ht)))
-      (ok (equal (list 1746502000 1746702000 1746902800) keys)))))
+      (ok (equal (list 1746502000 1746702000 1746902800) keys))))
+  (testing "migrations no sql files left"
+    (let* ((mig::*feed* test-feed-mig)
+           (mig-ht (mig:get-migrations 1746903000))
+           (keys (mig::get-migrations-keys mig-ht)))
+      (ok (= 0 (hash-table-count mig-ht)))
+      (ok (equal nil keys)))))
       
 (deftest test-yahoo
   (testing "yahoo-period"

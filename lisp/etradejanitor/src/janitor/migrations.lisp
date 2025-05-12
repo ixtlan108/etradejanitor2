@@ -48,15 +48,23 @@
   (let ((keys (loop for key being the hash-key of mig-ht collect key))) 
     (sort keys #'<)))
 
-(defun exec-migrations ()
-  (let* ((cur-version 0) ;(first (first (db:current-migration))))
+(defun exec-migrations (&key (test-run nil))
+  ;(let* ((cur-version 0) ;(first (first (db:current-migration))))
+  (let* ((cur-version (first (first (db:current-migration))))
          (migs (get-migrations cur-version))
          (mig-keys (get-migrations-keys migs)))
-    (format t "Current version: ~a, keys: ~a~%" cur-version mig-keys)
-    (print-hash migs)
+    (if (null mig-keys)
+      (format t "Already at latest version: ~a" cur-version)
+      (progn
+        (format t "Current version: ~a, keys: ~a~%" cur-version mig-keys)
+        (print-hash migs)))
     (dolist (k mig-keys)
-      (let ((cur-sql (gethash k migs)))
-        (format t "~a ~a~%" (getf cur-sql :unix) (getf cur-sql :comment))))))
+      (let* ((cur-sql (gethash k migs))
+             (cur-unix (getf cur-sql :unix))
+             (cur-comment (getf cur-sql :comment)))
+        (format t "~a ~a~%" cur-unix cur-comment)
+        (when (not test-run)
+          (db::insert-migration-version cur-unix cur-comment (getf cur-sql :sql)))))))
 
 
 
