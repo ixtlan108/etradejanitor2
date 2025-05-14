@@ -57,10 +57,10 @@
       nil)))
 
 (defun parse-spot (ticker)
-  (let ((csv-name (spot-csv-name ticker))
-        (oid (gethash ticker ticker-oid-ht)))
+  (let ((csv-name (spot-csv-name ticker)))
     (if (uiop:file-exists-p csv-name)
-      (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name))))
+      (let ((oid (gethash ticker ticker-oid-ht)))
+        (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name)))))
       nil)))
 
 ; 22.1.4. Standard Dispatching Macro Character Syntax

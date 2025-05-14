@@ -6,6 +6,7 @@
     (#:sprice #:janitor/stockmarket/stockprice)
     (#:pa #:janitor/parser))
   (:export
+    #:save-stockprices
     #:nordnet-expiries
     #:opening-price-spots
     #:opening-prices))
@@ -26,16 +27,7 @@
     (dolist (expiry items)
       (nordnet-expiry expiry))))
 
-(defun opening-price-spot (spot)
-  (let ((opn (sprice:s-opn spot))
-        (oid (sprice:s-ticker spot)))
-    (redis:red-hset "openingprices" oid opn)))
 
-(defun opening-price-spots (spots &key (db 0))
-  (redis:with-connection (:host redis-host)
-    (redis:red-select db)
-    (dolist (spot spots)
-      (opening-price-spot spot))))
 
 (defun opening-price-ticker (ticker)
   (let ((spot (pa:parse-spot ticker)))
@@ -48,23 +40,39 @@
     (dolist (ticker tickers)
       (opening-price-ticker ticker))))
 
-(defun spot-key (price)
-  (let ((oid (sprice:s-ticker price)))
-    (format nil "spot:~a" oid)))
+; (defun spot-key (price)
+;   (let ((oid (sprice:s-ticker price)))
+;     (format nil "spot:~a" oid)))
 
-(defun save-stockprice (price)
-  (let ((o (sprice:s-opn price))
-        (hi (sprice:s-hi price))
-        (lo (sprice:s-lo price))
-        (cls (sprice:s-cls price))
-        (vol (sprice:s-vol price))
-        ;(dx (sprice:s-dx price))
-        (k (spot-key price)))
-  (list o hi lo cls vol k)))
-   ;(redis:red-rpush )))
+(defun save-stockprice-value (price redis-key prop-fn)
+  (let ((value (funcall prop-fn price))
+        (oid (sprice:s-ticker price)))
+    (redis:red-hset redis-key oid value)))
 
-(defun save-stockprices (prices &key (db 0))
+(defun save-stockprice (price save-open)
+  (when save-open
+    (save-stockprice-value price "stockprice:open" #'sprice:s-opn))
+  (save-stockprice-value price "stockprice:hi" #'sprice:s-hi)
+  (save-stockprice-value price "stockprice:lo" #'sprice:s-lo)
+  (save-stockprice-value price "stockprice:close" #'sprice:s-cls)
+  (save-stockprice-value price "stockprice:vol" #'sprice:s-vol))
+  
+;(list o hi lo cls vol k)))
+;(redis:red-rpush )))
+
+(defun save-stockprices (prices db save-open)
   (redis:with-connection (:host redis-host)
     (redis:red-select db)
     (dolist (price prices)
-      (save-stockprice price))))
+      (save-stockprice price save-open))))
+
+(defun opening-price-spots (spots &key (db 0))
+  (redis:with-connection (:host redis-host)
+    (redis:red-select db)
+    (dolist (spot spots)
+      (save-stockprice-value spot "stockprice:open" #'sprice:s-opn))))
+
+
+
+
+

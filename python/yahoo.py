@@ -54,8 +54,8 @@ def download(t,period,feed):
       csv = h.to_csv()
       f.write(csv)
       f.close()
-  except:
-      print("Could not download: %s" % t)
+  except Exception as e:
+      print("Could not download: %s (%s)" % (t,e))
 
 VALID_PERIODS = ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y"]
 

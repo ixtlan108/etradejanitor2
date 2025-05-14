@@ -36,8 +36,8 @@
 
 (in-package :janitor/db)
 
-;(defparameter host "172.20.1.6")
-(defparameter host "172.20.1.7")
+(defparameter host "172.20.1.6")
+;(defparameter host "172.20.1.7")
 ;(defparameter host "localhost")
 
 (defun my-connect ()

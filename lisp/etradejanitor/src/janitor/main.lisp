@@ -161,6 +161,10 @@
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-3)))
 
+(defun run-tier-all (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+  (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
+    (run-tier-n tier-all)))
+
 (defun download-tickers (tix)
   (yahoo:download-tickers (funcall tdx) tix))
 
@@ -169,39 +173,46 @@
     (funcall tdx :invalidate t))
   (yahoo:download-tickers (funcall tdx) tier-all))
 
+(defun show-yahoo-periods ()
+  (janitor/yahoo::show-yahoo-periods (funcall tdx) tier-all))
+
 ; (redis:with-connection (:host "172.20.1.2") (redis:red-select 4) (redis:red-hset "openingprice" "YAX" "34.34"))
 
+; (defun opening-prices-tier-1  (&key (db 0))
+;   (rutil:opening-prices tier-1 :db db))
+;
+; (defun opening-prices-tier-2  (&key (db 0))
+;   (rutil:opening-prices tier-2 :db db))
+;
+; (defun opening-prices-tier-3  (&key (db 0))
+;   (rutil:opening-prices tier-3 :db db))
+;
+; (defun opening-prices-all (&key (db 0))
+;   (rutil:opening-prices tier-all :db db))
 
-(defun opening-prices-tier-1  (&key (db 0))
-  (rutil:opening-prices tier-1 :db db))
 
-(defun opening-prices-tier-2  (&key (db 0))
-  (rutil:opening-prices tier-2 :db db))
-
-(defun opening-prices-tier-3  (&key (db 0))
-  (rutil:opening-prices tier-3 :db db))
-
-(defun opening-prices-all (&key (db 0))
-  (rutil:opening-prices tier-all :db db))
-
-(defun spot (ticker)
-  (yahoo:download-spot ticker))
-
-(defun spots (tickers)
+(defun download-spots (tickers)
   (dolist (ticker tickers)
-    (spot ticker)))
+    (yahoo:download-spot ticker)))
 
-(defun spots-tier-1 ()
-  (spots tier-1))
+(defun dl-spots-tier-1 ()
+  (download-spots tier-1))
 
-(defun spots-tier-2 ()
-  (spots tier-2))
+(defun dl-spots-tier-2 ()
+  (download-spots tier-2))
 
-(defun spots-tier-3 ()
-  (spots tier-3))
+(defun dl-spots-tier-3 ()
+  (download-spots tier-3))
 
-(defun spots-all ()
-  (spots tier-all))
+(defun dl-spots-all ()
+  (download-spots tier-all))
+
+(defun save-stockprices (tickers &key (db 0) (save-open nil) (download nil))
+  (when download
+    (download-spots tickers))
+  (let ((prices (remove-if #'null (mapcar #'pa:parse-spot tickers))))
+    (rutil:save-stockprices prices db save-open)))
+
 
 (defun prn-tdx (&key (i-tdx nil))
   (if i-tdx
