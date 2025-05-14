@@ -174,7 +174,7 @@
   (yahoo:download-tickers (funcall tdx) tier-all))
 
 (defun show-yahoo-periods ()
-  (janitor/yahoo::show-yahoo-periods (funcall tdx) tier-all))
+  (yahoo::show-yahoo-periods (funcall tdx) tier-all))
 
 ; (redis:with-connection (:host "172.20.1.2") (redis:red-select 4) (redis:red-hset "openingprice" "YAX" "34.34"))
 

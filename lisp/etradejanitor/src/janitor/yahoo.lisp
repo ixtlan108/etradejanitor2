@@ -53,7 +53,7 @@
     (lambda (ticker)
       (let ((cur-dx (gethash ticker ht-tdx)))
           (if cur-dx
-            (yahoo-period cur-dx))))
+            (list :ticker ticker :period (yahoo-period cur-dx)))))
     tickers))
 
 (defun download-spot (ticker)
