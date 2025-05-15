@@ -5,6 +5,8 @@
   (:import-from :janitor/common
     #:between
     #:diff-days)
+  (:import-from :janitor/stockmarket/util
+    #:ticker-oid-ht)
   (:export
     #:download-tickers
     #:download-spot
@@ -51,9 +53,10 @@
 (defun show-yahoo-periods (ht-tdx tickers)
   (map 'list
     (lambda (ticker)
-      (let ((cur-dx (gethash ticker ht-tdx)))
+      (let ((cur-dx (gethash ticker ht-tdx))
+            (oid (gethash ticker ticker-oid-ht)))
           (if cur-dx
-            (list :ticker ticker :period (yahoo-period cur-dx)))))
+            (list :ticker ticker :oid oid :period (yahoo-period cur-dx)))))
     tickers))
 
 (defun download-spot (ticker)

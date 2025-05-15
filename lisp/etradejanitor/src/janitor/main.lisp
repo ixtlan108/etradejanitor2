@@ -174,18 +174,14 @@
   (yahoo:download-tickers (funcall tdx) tier-all))
 
 (defun show-yahoo-periods ()
-  (yahoo::show-yahoo-periods (funcall tdx) tier-all))
+  (let ((periods (yahoo::show-yahoo-periods (funcall tdx) tier-all)))
+    (dolist (p periods)
+      (format t "[~a] ~a -> ~a~%" (getf p :oid) (getf p :ticker) (getf p :period)))))
 
 ; (redis:with-connection (:host "172.20.1.2") (redis:red-select 4) (redis:red-hset "openingprice" "YAX" "34.34"))
 
 ; (defun opening-prices-tier-1  (&key (db 0))
-;   (rutil:opening-prices tier-1 :db db))
-;
-; (defun opening-prices-tier-2  (&key (db 0))
-;   (rutil:opening-prices tier-2 :db db))
-;
-; (defun opening-prices-tier-3  (&key (db 0))
-;   (rutil:opening-prices tier-3 :db db))
+;   (rutil:opening-prices tier-1 :db db)f   (rutil:opening-prices tier-3 :db db))
 ;
 ; (defun opening-prices-all (&key (db 0))
 ;   (rutil:opening-prices tier-all :db db))
