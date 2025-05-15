@@ -207,7 +207,7 @@
 (defun dl-spots-all ()
   (download-spots tier-all))
 
-(defun save-stockprices (tickers &key (db 0) (save-open nil) (download nil))
+(defun save-spots-redis (tickers &key (db 0) (save-open nil) (download nil))
   (when download
     (download-spots tickers))
   (let ((prices (remove-if #'null (mapcar #'pa:parse-spot tickers))))
