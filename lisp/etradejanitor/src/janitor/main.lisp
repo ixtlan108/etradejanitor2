@@ -4,26 +4,23 @@
   (:import-from :janitor/stockmarket/stockprice
     #:s-dx
     #:s-opn)
-  (:import-from :janitor/common
-    #:cache
-    #:clet
-    #:clet*
-    #:>0
-    #:partial
-    #:fn
-    #:vec-last
-    #:print-hash
-    #:iso-8601-string)
+  (:import-from :janitor/common #:>0)
   (:import-from :trivia #:match)
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:local-nicknames
     (#:db #:janitor/db)
+    (#:co #:janitor/common)
     (#:rutil #:janitor/redisutil)
     (#:yahoo #:janitor/yahoo)
     (#:pa #:janitor/parser))
   (:export
-    #:run))
+    #:run
+    #:run-tier-1
+    #:run-tier-2
+    #:run-tier-3
+    #:run-tier-all
+    #:retix))
 
 (in-package :janitor/main)
 
@@ -33,12 +30,15 @@
 ; 1, 3, 14
 
 (defparameter tier-2
-  (list "AKSO" "DNB" "GJF" "ORK" "TOM"))
+  (list "AKSO" "DNB" "ORK" "TOM"))
+;(list "AKSO" "DNB" "GJF" "ORK" "TOM"))
 
 ; 18,19,21,9,17
 
 (defparameter tier-3
-  (list "BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
+  (list "BAKKA" "BWLPG" "GOGL" "NAS" "SUBC" "TGS"))
+  
+;(list "BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
 
 (defparameter tier-all
   (concatenate 'list tier-1 tier-2 tier-3))
@@ -47,8 +47,15 @@
 
 ;(defvar tickers-all ())
 
+(defparameter *profile* :atest)
+
 (defparameter *cfg*
-  (list :skip-db nil :invalidate-tdx nil :skip-validate nil :skip-today nil))
+  (list 
+    :skip-db nil 
+    :invalidate-tdx nil 
+    :skip-validate nil 
+    :skip-today nil 
+    :profile :atest))
 
 (defun prn-cfg ()
   (format t "~{~a ~}~%" *cfg*))
@@ -61,7 +68,7 @@
   (if (cfg-get :skip-validate)
     (list :status :ok :result co)
     (let
-      ((start-date (s-dx (vec-last co))))
+      ((start-date (s-dx (co:vec-last co))))
         (if (timestamp< dx start-date)
           (list :status :start-date-error
                 :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
@@ -75,9 +82,9 @@
         ((equal s :ok)
           (let* ((rows (getf c :rows))
                 (ed (elt rows 0))
-                (sd (vec-last rows)))
+                (sd (co:vec-last rows)))
             (princ (format nil "ticker: ~a => status: ~a, num items: ~a, start: ~a, end:~a~%"
-                    (getf c :ticker) (getf c :status) (getf c :len) (iso-8601-string (s-dx sd)) (iso-8601-string (s-dx ed))))))
+                    (getf c :ticker) (getf c :status) (getf c :len) (co:iso-8601-string (s-dx sd)) (co:iso-8601-string (s-dx ed))))))
         (t
           (if (getf c :err)
             (princ (format nil "ticker: ~a => status: ~a, err: ~a~%" (getf c :ticker) (getf c :status) (getf c :err)))
@@ -101,7 +108,7 @@
 (defun parse-tickers (ht-tdx tickers skip-today)
   (let ((remaining '()))
     (dolist (ticker tickers)
-      (clet (m (parse-ticker ticker ht-tdx :skip-today skip-today))
+      (let ((m (parse-ticker ticker ht-tdx :skip-today skip-today)))
         (match m
           ((list :status :empty-cutoffs)
             (push (list :status :empty-cutoffs :ticker ticker) remaining))
@@ -120,16 +127,25 @@
             (push (list :status :unknown :ticker ticker) remaining)))))
     remaining))
 
-(defparameter tdx (cache #'db:ticker-dx))
+(defparameter tdx-prod (co:cache-2 #'db:ticker-dx :prod))
+(defparameter tdx-atest (co:cache-2 #'db:ticker-dx :atest))
+;(defparameter *tdx* tdx-prod)
+
+(defun get-tdx ()
+  (format t "Current profile: ~a~%" *profile*)
+  (if (eq *profile* :prod)
+    tdx-prod
+    tdx-atest))
+
 
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
-      (db:insert-stockprice (getf ticker :rows))))
-  (funcall tdx :invalidate t))
+      (db:insert-stockprice *profile* (getf ticker :rows))))
+  (funcall (get-tdx) :invalidate t))
 
 (defun run (tickers)
-  (let ((tix (parse-tickers (funcall tdx) tickers (cfg-get :skip-today))))
+  (let ((tix (parse-tickers (funcall (get-tdx)) tickers (cfg-get :skip-today))))
     (print-status tix)
     (unless (cfg-get :skip-db)
       (print "Inserting prices into database...")
@@ -139,57 +155,67 @@
 (defun run-tier-n (tier)
   (prn-cfg)
   (if (cfg-get :invalidate-tdx)
-    (funcall tdx :invalidate t))
+    (funcall (get-tdx) :invalidate t))
   (run tier))
 
-(defun config-cfg (skip-db invalidate-tdx skip-validate skip-today)
+(defun config-cfg (skip-db 
+                    invalidate-tdx 
+                    skip-validate 
+                    skip-today)
   (list
     :skip-db skip-db
     :invalidate-tdx invalidate-tdx
     :skip-validate skip-validate
     :skip-today skip-today))
 
-(defun run-tier-1 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-1 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-1)))
 
-(defun run-tier-2 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-2 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-2)))
 
-(defun run-tier-3 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-3 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-3)))
 
-(defun run-tier-all (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-all 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-all)))
 
 (defun download-tickers (tix)
-  (yahoo:download-tickers (funcall tdx) tix))
+  (yahoo:download-tickers (funcall (get-tdx)) tix))
 
 (defun download-all (&key (i-tdx nil))
   (if i-tdx
-    (funcall tdx :invalidate t))
-  (yahoo:download-tickers (funcall tdx) tier-all))
+    (funcall (get-tdx) :invalidate t))
+  (yahoo:download-tickers (funcall (get-tdx)) tier-all))
 
 (defun show-yahoo-periods ()
-  (yahoo::show-yahoo-periods (funcall tdx) tier-all))
-
-; (redis:with-connection (:host "172.20.1.2") (redis:red-select 4) (redis:red-hset "openingprice" "YAX" "34.34"))
-
-; (defun opening-prices-tier-1  (&key (db 0))
-;   (rutil:opening-prices tier-1 :db db))
-;
-; (defun opening-prices-tier-2  (&key (db 0))
-;   (rutil:opening-prices tier-2 :db db))
-;
-; (defun opening-prices-tier-3  (&key (db 0))
-;   (rutil:opening-prices tier-3 :db db))
-;
-; (defun opening-prices-all (&key (db 0))
-;   (rutil:opening-prices tier-all :db db))
-
+  (let ((periods (yahoo::show-yahoo-periods (funcall (get-tdx)) tier-all)))
+    (dolist (p periods)
+      (format t "[~a] ~a -> ~a~%" (getf p :oid) (getf p :ticker) (getf p :period)))))
 
 (defun download-spots (tickers)
   (dolist (ticker tickers)
@@ -207,7 +233,7 @@
 (defun dl-spots-all ()
   (download-spots tier-all))
 
-(defun save-stockprices (tickers &key (db 0) (save-open nil) (download nil))
+(defun save-spots-redis (tickers &key (db 0) (save-open nil) (download nil))
   (when download
     (download-spots tickers))
   (let ((prices (remove-if #'null (mapcar #'pa:parse-spot tickers))))
@@ -216,9 +242,55 @@
 
 (defun prn-tdx (&key (i-tdx nil))
   (if i-tdx
-    (funcall tdx :invalidate t))
-  (print-hash (funcall tdx)))
+    (funcall (get-tdx) :invalidate t))
+  (co:print-hash (funcall (get-tdx))))
 
+(defun prod ()
+  (setf *profile* :prod))
+
+(defun atest ()
+  (setf *profile* :atest))
+
+(defun cup ()
+  (format t "Current profile: ~a" *profile*))
+
+(defun cmi ()
+  (let* ((mig (first (db:current-migration-info *profile*)))
+         (version (first mig))
+         (comment (second mig)))
+    (format t "[~a] Current migration ~a ~a" *profile* version comment)))
+
+
+(defun feed-status (&optional tickers)
+  (let ((tix (if (null tickers) tier-all tickers))) 
+    (if (listp tix)
+      (map 'list #'pa:feed-status tix)
+      (list (pa:feed-status tix)))))
+
+(defun stockprice-tm-less-than (my-date) 
+  (lambda (v)
+    (let ((cur-sp (getf v :tm)))
+      (if cur-sp 
+        (local-time:timestamp< cur-sp my-date)
+        nil))))
+
+(defparameter dx (local-time:now))
+
+(defun retix (&optional (cur-date (local-time:now)))
+  (let ((fstat (feed-status))
+        (fn (stockprice-tm-less-than cur-date))
+        result '())
+    (loop for item in fstat do
+          (let ((itemx (funcall fn item))) 
+            (if itemx 
+              (push item result))))
+    result))
+
+  ;(format t "Current profile: ~a, current migration ~a" *profile* (first (first (db:current-migration *profile*)))))
+
+;(format t "~%~%~a~%~%" (cur-mig))
+
+  
 ;(asdf:component-pathname (asdf:find-system :etradejanitor))
 
 ; (defun spot (ticker &key (redis nil) (db 0))

@@ -2,17 +2,19 @@
   (:use :cl)
   (:import-from :janitor/common
     #:print-hash
+    #:unix-time-now
     #:*home*)
   (:local-nicknames
     (#:db #:janitor/db))
   (:export
     #:exec-migrations
-    #:get-migrations))
+    #:get-migrations
+    #:new-migration))
 
 (in-package :janitor/migrations)
 
 
-(defvar *feed*
+(defparameter *feed*
   (format nil "~a/database/migrations" *home*))
 
 (defun unix-time-comment (fname_dot_sql)
@@ -48,23 +50,37 @@
   (let ((keys (loop for key being the hash-key of mig-ht collect key))) 
     (sort keys #'<)))
 
-(defun exec-migrations (&key (test-run nil))
-  (let* ((cur-version (first (first (db:current-migration))))
+(defun exec-migrations (profile &key (test-run nil))
+  (let* ((cur-version (first (first (db:current-migration profile))))
          (migs (get-migrations cur-version)))
     (if (= 0 (hash-table-count migs))
       (format t "Already at latest version: ~a" cur-version)
       (progn
-        (format t "Current version: ~a, keys: ~a~%" cur-version mig-keys)
         (print-hash migs)
-        (let (mig-keys (get-migrations-keys migs))
+        (format t "Current version: ~a~%" cur-version)
+        (let ((mig-keys (get-migrations-keys migs)))
+          (format t "mig-keys ~a~%" mig-keys)
           (dolist (k mig-keys)
+            (format t "key ~a~%" k)
             (let* ((cur-sql (gethash k migs))
                    (cur-unix (getf cur-sql :unix))
                    (cur-comment (getf cur-sql :comment)))
               (format t "~a ~a~%" cur-unix cur-comment)
               (when (not test-run)
-                (db::insert-migration-version cur-unix cur-comment (getf cur-sql :sql))))))))))
+                (db:insert-migration-version profile cur-unix cur-comment (getf cur-sql :sql))))))))))
 
+
+(defun write-migration (fname)
+  (with-open-file (output fname
+                    :direction         :output
+                    :if-does-not-exist :create
+                    :if-exists         :supersede) 
+    (format output "~a~%" "--- new migration ---")))
+
+(defun new-migration (comment)
+  (let* ((unix (unix-time-now))
+         (fname (format nil "~a/~a__~a.sql" *feed* unix comment)))
+    (write-migration fname)))
 
 
 

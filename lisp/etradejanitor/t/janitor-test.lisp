@@ -27,6 +27,9 @@
 (defparameter test-feed-mig
   (format nil "~a/lisp/etradejanitor/t/resources/migrations" *home*))
 
+(defparameter test-feed-feedstatus
+  (format nil "~a/lisp/etradejanitor/t/resources/feedstatus" *home*))
+
 (defvar expected
   (sprice::make-stockprice
     :ticker 3
@@ -85,7 +88,7 @@
            (keys (mig::get-migrations-keys mig-ht)))
       (ok (= 0 (hash-table-count mig-ht)))
       (ok (equal nil keys)))))
-      
+
 (deftest test-yahoo
   (testing "yahoo-period"
     (ok (equal (ya:yahoo-period jan-1 :end-date dec-2024-30) "na"))
@@ -205,4 +208,24 @@
         (tdx-3 (create-tdx-nhy "2024-12-30")
           result-3 (ma::parse-ticker "NHY" tdx-3))
         (ok (equal (getf result-3 :status) :start-date-error))))))
+
+(defun check-feed-status (ticker csv-result num-lines)
+  (let ((result (first (ma::feed-status ticker))))
+    (ok (equal (getf result :csv) csv-result))
+    (ok (= (getf result :lines) num-lines))))
+
+(deftest test-feed-status
+  (let ((parser::*feed* test-feed-feedstatus))
+    (testing "NHY"
+      (check-feed-status "NHY" :ok 2))
+    (testing "YAR"
+      (check-feed-status "YAR" :ok 8))
+    (testing "BAKKA"
+      (check-feed-status "BAKKA" :incomplete 0))
+    (testing "STB"
+      (check-feed-status "STB" :incomplete 1))
+    (testing "AKSO"
+      (check-feed-status "AKSO" :missing 0))))
+        
+        
 

@@ -8,8 +8,7 @@
   (:export
     #:save-stockprices
     #:nordnet-expiries
-    #:opening-price-spots
-    #:opening-prices))
+    #:opening-price-spots))
 
 (in-package :janitor/redisutil)
 
@@ -27,18 +26,6 @@
     (dolist (expiry items)
       (nordnet-expiry expiry))))
 
-
-
-(defun opening-price-ticker (ticker)
-  (let ((spot (pa:parse-spot ticker)))
-    (when spot
-      (opening-price-spot spot))))
-
-(defun opening-prices (tickers &key (db 0))
-  (redis:with-connection (:host redis-host)
-    (redis:red-select db)
-    (dolist (ticker tickers)
-      (opening-price-ticker ticker))))
 
 ; (defun spot-key (price)
 ;   (let ((oid (sprice:s-ticker price)))
@@ -73,6 +60,16 @@
       (save-stockprice-value spot "stockprice:open" #'sprice:s-opn))))
 
 
-
+; (defun opening-price-ticker (ticker)
+;   (let ((spot (pa:parse-spot ticker)))
+;     (when spot
+;       (opening-price-spot spot))))
+;
+; (defun opening-prices (tickers &key (db 0))
+;   (redis:with-connection (:host redis-host)
+;     (redis:red-select db)
+;     (dolist (ticker tickers)
+;       (opening-price-ticker ticker))))
+;
 
 

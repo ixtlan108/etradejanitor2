@@ -3,16 +3,20 @@
   (:local-nicknames
     (#:com #:janitor/common)
     (#:sprice #:janitor/stockmarket/stockprice))
-  (:import-from :local-time #:timestamp<)
+  (:import-from :local-time 
+      #:timestamp<)
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:import-from :janitor/common
-    #:*home*)
+    #:*home*
+    #:count-file-lines
+    #:csv->time)
   (:export
     #:parse
     #:parse-spot
     #:cut-off
-    #:parse-cut-off))
+    #:parse-cut-off
+    #:feed-status))
 
 (in-package :janitor/parser)
 
@@ -63,6 +67,27 @@
         (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name)))))
       nil)))
 
+
+(defun latest-stockprice (ticker)
+  (let ((rows (parse ticker)))
+    (when rows
+      (let ((ts (first (first rows))))
+        (csv->time ts)))))
+
+(defun feed-status (ticker)
+  (let ((csv-name (feed-csv-name ticker)))
+    (if (uiop:file-exists-p csv-name)
+      (let ((line-count (count-file-lines (pathname csv-name))))
+        (if (< line-count 2)
+          (list :ticker ticker :csv :incomplete :lines line-count)
+          (let ((sp (latest-stockprice ticker)))
+            (list :ticker ticker :csv :ok :lines line-count :tm sp))))
+      (list :ticker ticker :csv :missing :lines 0))))
+    
+
+             ;(csv-status (if (< line-count 2) :incomplete :ok)))
+
+  
 ; 22.1.4. Standard Dispatching Macro Character Syntax
 ; The standard syntax includes forms introduced by the # character. These take the general form of a #, a second character that identifies the syntax, and following arguments in some form. If the second character is a letter, then case is not important; #O and #o are considered to be equivalent, for example.
 

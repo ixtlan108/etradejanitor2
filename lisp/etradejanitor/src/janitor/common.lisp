@@ -4,14 +4,19 @@
     #:timestamp-day
     #:timestamp-month
     #:format-timestring
-    #:timestamp-to-unix)
+    #:timestamp-to-unix
+    #:parse-timestring
+    #:now)
   (:export
+    #:count-file-lines
     #:cache
+    #:cache-2
     #:clet
     #:clet*
     #:read-csv
     #:date
     #:iso-8601-string
+    #:unix-time-now
     #:diff-days
     #:between
     #:float-equals-p
@@ -20,6 +25,7 @@
     #:vec-last
     #:partial
     #:gethx
+    #:csv->time
     #:*home*))
 
 ;(:import-from :trivia #:match)
@@ -30,6 +36,28 @@
   (uiop:native-namestring "~/opt/etradejanitor2"))
   ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
 
+(defun csv->time (s)
+  (parse-timestring (nth 0 (str:split " " s)) ))
+
+(defun count-file-lines (path)
+  "Count the number of non-empty lines in the file at PATH. A line is empty if
+it only contains space or tabulation characters."
+  (declare (type pathname path))
+  (with-open-file (stream path :element-type '(unsigned-byte 8))
+    (do ((nb-lines 0)
+         (blank-line t))
+        (nil)
+      (let ((octet (read-byte stream nil)))
+        (cond
+          ((or (null octet) (eq octet #.(char-code #\Newline)))
+           (unless blank-line
+             (incf nb-lines))
+           (when (null octet)
+             (return-from count-file-lines nb-lines))
+           (setf blank-line t))
+          ((and (/= octet #.(char-code #\Space))
+                (/= octet #.(char-code #\Tab)))
+           (setf blank-line nil)))))))
 
 (defmacro cache(fn)
   (let ((mydata (gensym)))
@@ -43,6 +71,20 @@
             (when (null ,mydata)
               (princ (format nil "Memoizing...~%"))
               (setf ,mydata (funcall ,fn)))))
+        ,mydata))))
+
+(defmacro cache-2(fn &rest args)
+  (let ((mydata (gensym)))
+    `(let ((,mydata nil))
+      (lambda (&key (invalidate nil))
+        (if invalidate
+          (progn
+            (princ (format nil "Invalidating cache..~%"))
+            (setf ,mydata nil))
+          (progn
+            (when (null ,mydata)
+              (princ (format nil "Memoizing...~%"))
+              (setf ,mydata (funcall ,fn ,@args)))))
         ,mydata))))
 
 (defun print-hash-entry (key value)
@@ -61,8 +103,6 @@
   (when (>0 v)
     (elt v (- (length v) 1))))
 
-(defun gethx (ht key)
-  (gethash key ht))
 
 ;(defmacro fn (&rest forms)
 ;  `(lambda ,@forms))
@@ -80,14 +120,14 @@
   (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
 
 (defun iso-8601-string (dt)
-  (clet* (d (timestamp-day dt)
-         m (timestamp-month dt)
-         my-format
+  (let* ((d (timestamp-day dt))
+         (m (timestamp-month dt))
+         (my-format
           (cond
             ((and (< m 10) (< d 10)) '(:year "-0" :month "-0" :day))
             ((and (< m 10) (>= d 10)) '(:year "-0" :month "-" :day))
             ((and (>= m 10) (< d 10)) '(:year "-" :month "-0" :day))
-            (t                        '(:year "-" :month "-" :day))))
+            (t                        '(:year "-" :month "-" :day)))))
     (format-timestring nil dt :format my-format)))
 
 (defconstant +seconds-in-day+ 86400)
@@ -100,6 +140,9 @@
 
 ;  (if (<= diff 0)
 ;    0
+
+(defun unix-time-now ()
+  (timestamp-to-unix (now)))
 
 (defun between (from-value to-value value &key (begin-open nil) (end-closed nil))
   (let ((opn-fn (if begin-open #'< #'<=))
@@ -130,11 +173,11 @@
     (apply function (append args more-args))))
 
 ;;;--------------------------------- with-gensyms macro ----------------------------
-(defmacro with-gensyms (syms &body body)
-  `(let
-    ,(mapcar
-      (lambda (s) `(,s (gensym))) syms)
-        ,@body))
+; (defmacro with-gensyms (syms &body body)
+;   `(let
+;     ,(mapcar
+;       (lambda (s) `(,s (gensym))) syms)
+;         ,@body))
 ;;;--------------------------------- END with-gensyms macro ----------------------------
 
 ;;;--------------------------------- with-struct macro ----------------------------
