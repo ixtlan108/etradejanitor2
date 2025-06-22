@@ -27,6 +27,7 @@
     #:defprepared
     #:execute-file
     #:with-transaction
+    #:with-connection
     #:*database*)
   (:export
     #:current-migration
@@ -59,7 +60,7 @@
 
 
 (defun populate-ht (items)
-  (clet (ht (make-hash-table :test 'equal))
+  (let ((ht (make-hash-table :test 'equal)))
     (loop for item in items
       do
         (clet*
@@ -71,11 +72,11 @@
 
 ;(defun populate (items)
 
-(defun ticker-dx ()
+(defun ticker-dx (profile)
   (my-connect)
-  (clet*
-    (items (db-ticker-dx)
-    result (populate-ht items))
+  (let*
+    ((items (db-ticker-dx))
+     (result (populate-ht items)))
     result))
 
 (defprepared insert-stockprice-sql
@@ -85,14 +86,14 @@
   (my-connect)
   (with-transaction ()
     (loop :for r :across rows :do
-      (clet
-        (oid (s-ticker r)
-        dx (iso-8601-string (s-dx r))
-        opn (s-opn r)
-        hi (s-hi r)
-        lo (s-lo r)
-        cls (s-cls r)
-        vol (s-vol r))
+      (let
+        ((oid (s-ticker r))
+         (dx (iso-8601-string (s-dx r)))
+         (opn (s-opn r))
+         (hi (s-hi r))
+         (lo (s-lo r))
+         (cls (s-cls r))
+         (vol (s-vol r)))
         (funcall 'insert-stockprice-sql oid dx opn hi lo cls vol)))))
 
 (defprepared insert-stockpurchase-sql

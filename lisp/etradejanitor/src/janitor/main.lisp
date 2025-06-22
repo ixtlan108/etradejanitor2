@@ -4,21 +4,13 @@
   (:import-from :janitor/stockmarket/stockprice
     #:s-dx
     #:s-opn)
-  (:import-from :janitor/common
-    #:cache
-    #:clet
-    #:clet*
-    #:>0
-    #:partial
-    #:fn
-    #:vec-last
-    #:print-hash
-    #:iso-8601-string)
+  (:import-from :janitor/common #:>0)
   (:import-from :trivia #:match)
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:local-nicknames
     (#:db #:janitor/db)
+    (#:co #:janitor/common)
     (#:rutil #:janitor/redisutil)
     (#:yahoo #:janitor/yahoo)
     (#:pa #:janitor/parser))
@@ -61,7 +53,7 @@
   (if (cfg-get :skip-validate)
     (list :status :ok :result co)
     (let
-      ((start-date (s-dx (vec-last co))))
+      ((start-date (s-dx (co:vec-last co))))
         (if (timestamp< dx start-date)
           (list :status :start-date-error
                 :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
@@ -75,9 +67,9 @@
         ((equal s :ok)
           (let* ((rows (getf c :rows))
                 (ed (elt rows 0))
-                (sd (vec-last rows)))
+                (sd (co:vec-last rows)))
             (princ (format nil "ticker: ~a => status: ~a, num items: ~a, start: ~a, end:~a~%"
-                    (getf c :ticker) (getf c :status) (getf c :len) (iso-8601-string (s-dx sd)) (iso-8601-string (s-dx ed))))))
+                    (getf c :ticker) (getf c :status) (getf c :len) (co:iso-8601-string (s-dx sd)) (co:iso-8601-string (s-dx ed))))))
         (t
           (if (getf c :err)
             (princ (format nil "ticker: ~a => status: ~a, err: ~a~%" (getf c :ticker) (getf c :status) (getf c :err)))
@@ -101,7 +93,7 @@
 (defun parse-tickers (ht-tdx tickers skip-today)
   (let ((remaining '()))
     (dolist (ticker tickers)
-      (clet (m (parse-ticker ticker ht-tdx :skip-today skip-today))
+      (let ((m (parse-ticker ticker ht-tdx :skip-today skip-today)))
         (match m
           ((list :status :empty-cutoffs)
             (push (list :status :empty-cutoffs :ticker ticker) remaining))
@@ -120,16 +112,18 @@
             (push (list :status :unknown :ticker ticker) remaining)))))
     remaining))
 
-(defparameter tdx (cache #'db:ticker-dx))
+(defparameter tdx-prod (co:cache-2 #'db:ticker-dx :prod))
+(defparameter tdx-atest (co:cache-2 #'db:ticker-dx :atest))
+(defparameter *tdx* tdx-prod)
 
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
       (db:insert-stockprice (getf ticker :rows))))
-  (funcall tdx :invalidate t))
+  (funcall *tdx* :invalidate t))
 
 (defun run (tickers)
-  (let ((tix (parse-tickers (funcall tdx) tickers (cfg-get :skip-today))))
+  (let ((tix (parse-tickers (funcall *tdx*) tickers (cfg-get :skip-today))))
     (print-status tix)
     (unless (cfg-get :skip-db)
       (print "Inserting prices into database...")
@@ -139,7 +133,7 @@
 (defun run-tier-n (tier)
   (prn-cfg)
   (if (cfg-get :invalidate-tdx)
-    (funcall tdx :invalidate t))
+    (funcall *tdx* :invalidate t))
   (run tier))
 
 (defun config-cfg (skip-db invalidate-tdx skip-validate skip-today)
@@ -166,15 +160,15 @@
     (run-tier-n tier-all)))
 
 (defun download-tickers (tix)
-  (yahoo:download-tickers (funcall tdx) tix))
+  (yahoo:download-tickers (funcall *tdx*) tix))
 
 (defun download-all (&key (i-tdx nil))
   (if i-tdx
-    (funcall tdx :invalidate t))
-  (yahoo:download-tickers (funcall tdx) tier-all))
+    (funcall *tdx* :invalidate t))
+  (yahoo:download-tickers (funcall *tdx*) tier-all))
 
 (defun show-yahoo-periods ()
-  (let ((periods (yahoo::show-yahoo-periods (funcall tdx) tier-all)))
+  (let ((periods (yahoo::show-yahoo-periods (funcall *tdx*) tier-all)))
     (dolist (p periods)
       (format t "[~a] ~a -> ~a~%" (getf p :oid) (getf p :ticker) (getf p :period)))))
 
@@ -203,8 +197,8 @@
 
 (defun prn-tdx (&key (i-tdx nil))
   (if i-tdx
-    (funcall tdx :invalidate t))
-  (print-hash (funcall tdx)))
+    (funcall *tdx* :invalidate t))
+  (co:print-hash (funcall *tdx*)))
 
 ;(asdf:component-pathname (asdf:find-system :etradejanitor))
 

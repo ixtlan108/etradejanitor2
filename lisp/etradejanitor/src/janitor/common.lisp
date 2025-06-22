@@ -7,6 +7,7 @@
     #:timestamp-to-unix)
   (:export
     #:cache
+    #:cache-2
     #:clet
     #:clet*
     #:read-csv
@@ -43,6 +44,20 @@
             (when (null ,mydata)
               (princ (format nil "Memoizing...~%"))
               (setf ,mydata (funcall ,fn)))))
+        ,mydata))))
+
+(defmacro cache-2(fn &rest args)
+  (let ((mydata (gensym)))
+    `(let ((,mydata nil))
+      (lambda (&key (invalidate nil))
+        (if invalidate
+          (progn
+            (princ (format nil "Invalidating cache..~%"))
+            (setf ,mydata nil))
+          (progn
+            (when (null ,mydata)
+              (princ (format nil "Memoizing...~%"))
+              (setf ,mydata (funcall ,fn ,@args)))))
         ,mydata))))
 
 (defun print-hash-entry (key value)
