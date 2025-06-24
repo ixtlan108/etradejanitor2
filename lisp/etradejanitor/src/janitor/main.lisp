@@ -40,7 +40,12 @@
 ;(defvar tickers-all ())
 
 (defparameter *cfg*
-  (list :skip-db nil :invalidate-tdx nil :skip-validate nil :skip-today nil))
+  (list 
+    :skip-db nil 
+    :invalidate-tdx nil 
+    :skip-validate nil 
+    :skip-today nil 
+    :profile :atest))
 
 (defun prn-cfg ()
   (format t "~{~a ~}~%" *cfg*))
@@ -116,11 +121,18 @@
 (defparameter tdx-atest (co:cache-2 #'db:ticker-dx :atest))
 (defparameter *tdx* tdx-prod)
 
+(defun get-tdx ()
+  (let ((cur-profile (cfg-get :profile)))
+    (if (eq cur-profile :prod)
+      tdx-prod
+      tdx-atest)))
+
+
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
       (db:insert-stockprice (getf ticker :rows))))
-  (funcall *tdx* :invalidate t))
+  (funcall (get-tdx) :invalidate t))
 
 (defun run (tickers)
   (let ((tix (parse-tickers (funcall *tdx*) tickers (cfg-get :skip-today))))
@@ -136,14 +148,22 @@
     (funcall *tdx* :invalidate t))
   (run tier))
 
-(defun config-cfg (skip-db invalidate-tdx skip-validate skip-today)
+(defun config-cfg (skip-db 
+                    invalidate-tdx 
+                    skip-validate 
+                    skip-today)
   (list
     :skip-db skip-db
     :invalidate-tdx invalidate-tdx
     :skip-validate skip-validate
     :skip-today skip-today))
 
-(defun run-tier-1 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-1 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-1)))
 
