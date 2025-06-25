@@ -26,6 +26,8 @@
     (#:pm #:postmodern))
   (:export
     #:current-migration
+    #:current-migration-info 
+    #:insert-migration-version 
     #:ticker-dx
     #:insert-stockprice
     #:insert-stockpurchase))
@@ -113,17 +115,25 @@
 (pm:defprepared current-migration-sql
   "select max(version) from stockmarket.migrations")
 
-(defun current-migration ()
-  (my-connect)
-  (pm:with-transaction ()
-    (funcall 'current-migration-sql)))
+(defun current-migration (profile)
+  (pm:with-connection (conn-param profile)
+    (pm:with-transaction ()
+      (funcall 'current-migration-sql))))
+
+(pm:defprepared current-migration-info-sql
+  "select * from stockmarket.migrations where version = (select max(version) from stockmarket.migrations)")
+
+(defun current-migration-info (profile)
+  (pm:with-connection (conn-param profile)
+    (pm:with-transaction ()
+      (funcall 'current-migration-info-sql))))
 
 (pm:defprepared insert-migration-sql
   "insert into stockmarket.migrations (version,comment) values ($1,$2)")
 
 
-(defun insert-migration-version (unix-time comment sql-file)
-  (my-connect)
-  (pm:with-transaction ()
-    (pm:execute-file sql-file t)
-    (funcall 'insert-migration-sql unix-time comment)))
+(defun insert-migration-version (profile unix-time comment sql-file)
+  (pm:with-connection (conn-param profile)
+    (pm:with-transaction ()
+      (pm:execute-file sql-file t)
+      (funcall 'insert-migration-sql unix-time comment))))

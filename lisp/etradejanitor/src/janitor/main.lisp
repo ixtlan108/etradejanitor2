@@ -248,6 +248,19 @@
 
 (defun curp ()
   (format t "Current profile: ~a" *profile*))
+
+(defun curm ()
+  (let* ((mig (first (db:current-migration-info *profile*)))
+         (version (first mig))
+         (comment (second mig)))
+    (format t "[~a] Current migration ~a ~a" *profile* version comment)))
+
+
+  ;(format t "Current profile: ~a, current migration ~a" *profile* (first (first (db:current-migration *profile*)))))
+
+;(format t "~%~%~a~%~%" (cur-mig))
+
+  
 ;(asdf:component-pathname (asdf:find-system :etradejanitor))
 
 ; (defun spot (ticker &key (redis nil) (db 0))

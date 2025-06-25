@@ -12,7 +12,7 @@
 (in-package :janitor/migrations)
 
 
-(defvar *feed*
+(defparameter *feed*
   (format nil "~a/database/migrations" *home*))
 
 (defun unix-time-comment (fname_dot_sql)
