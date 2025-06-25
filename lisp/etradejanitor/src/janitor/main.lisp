@@ -25,12 +25,15 @@
 ; 1, 3, 14
 
 (defparameter tier-2
-  (list "AKSO" "DNB" "GJF" "ORK" "TOM"))
+  (list "AKSO" "DNB" "ORK" "TOM"))
+;(list "AKSO" "DNB" "GJF" "ORK" "TOM"))
 
 ; 18,19,21,9,17
 
 (defparameter tier-3
-  (list "BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
+  (list "BAKKA" "BWLPG" "GOGL" "NAS" "SUBC" "TGS"))
+  
+;(list "BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
 
 (defparameter tier-all
   (concatenate 'list tier-1 tier-2 tier-3))
@@ -38,6 +41,8 @@
 ; 27,26,20,28,29,23,16
 
 ;(defvar tickers-all ())
+
+(defparameter *profile* :atest)
 
 (defparameter *cfg*
   (list 
@@ -119,23 +124,23 @@
 
 (defparameter tdx-prod (co:cache-2 #'db:ticker-dx :prod))
 (defparameter tdx-atest (co:cache-2 #'db:ticker-dx :atest))
-(defparameter *tdx* tdx-prod)
+;(defparameter *tdx* tdx-prod)
 
 (defun get-tdx ()
-  (let ((cur-profile (cfg-get :profile)))
-    (if (eq cur-profile :prod)
-      tdx-prod
-      tdx-atest)))
+  (format t "Current profile: ~a~%" *profile*)
+  (if (eq *profile* :prod)
+    tdx-prod
+    tdx-atest))
 
 
 (defun process-db-tickers (tix)
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
-      (db:insert-stockprice (getf ticker :rows))))
+      (db:insert-stockprice *profile* (getf ticker :rows))))
   (funcall (get-tdx) :invalidate t))
 
 (defun run (tickers)
-  (let ((tix (parse-tickers (funcall *tdx*) tickers (cfg-get :skip-today))))
+  (let ((tix (parse-tickers (funcall (get-tdx)) tickers (cfg-get :skip-today))))
     (print-status tix)
     (unless (cfg-get :skip-db)
       (print "Inserting prices into database...")
@@ -145,7 +150,7 @@
 (defun run-tier-n (tier)
   (prn-cfg)
   (if (cfg-get :invalidate-tdx)
-    (funcall *tdx* :invalidate t))
+    (funcall (get-tdx) :invalidate t))
   (run tier))
 
 (defun config-cfg (skip-db 
@@ -167,28 +172,43 @@
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-1)))
 
-(defun run-tier-2 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-2 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-2)))
 
-(defun run-tier-3 (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-3 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-3)))
 
-(defun run-tier-all (&key (s-db nil) (i-tdx nil) (s-val nil) (s-today nil))
+(defun run-tier-all 
+  (&key 
+    (s-db nil) 
+    (i-tdx nil) 
+    (s-val nil) 
+    (s-today nil))
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-all)))
 
 (defun download-tickers (tix)
-  (yahoo:download-tickers (funcall *tdx*) tix))
+  (yahoo:download-tickers (funcall (get-tdx)) tix))
 
 (defun download-all (&key (i-tdx nil))
   (if i-tdx
-    (funcall *tdx* :invalidate t))
-  (yahoo:download-tickers (funcall *tdx*) tier-all))
+    (funcall (get-tdx) :invalidate t))
+  (yahoo:download-tickers (funcall (get-tdx)) tier-all))
 
 (defun show-yahoo-periods ()
-  (let ((periods (yahoo::show-yahoo-periods (funcall *tdx*) tier-all)))
+  (let ((periods (yahoo::show-yahoo-periods (funcall (get-tdx)) tier-all)))
     (dolist (p periods)
       (format t "[~a] ~a -> ~a~%" (getf p :oid) (getf p :ticker) (getf p :period)))))
 
@@ -217,9 +237,17 @@
 
 (defun prn-tdx (&key (i-tdx nil))
   (if i-tdx
-    (funcall *tdx* :invalidate t))
-  (co:print-hash (funcall *tdx*)))
+    (funcall (get-tdx) :invalidate t))
+  (co:print-hash (funcall (get-tdx))))
 
+(defun prod ()
+  (setf *profile* :prod))
+
+(defun atest ()
+  (setf *profile* :atest))
+
+(defun curp ()
+  (format t "Current profile: ~a" *profile*))
 ;(asdf:component-pathname (asdf:find-system :etradejanitor))
 
 ; (defun spot (ticker &key (redis nil) (db 0))

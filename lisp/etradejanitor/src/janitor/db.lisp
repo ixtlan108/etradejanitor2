@@ -84,31 +84,31 @@
 (pm:defprepared insert-stockprice-sql
   "insert into stockmarket.stockprice (ticker_id,dx,opn,hi,lo,cls,vol) values ($1,$2,$3,$4,$5,$6,$7)")
 
-(defun insert-stockprice (rows)
-  (my-connect)
-  (pm:with-transaction ()
-    (loop :for r :across rows :do
-      (let
-        ((oid (s-ticker r))
-         (dx (iso-8601-string (s-dx r)))
-         (opn (s-opn r))
-         (hi (s-hi r))
-         (lo (s-lo r))
-         (cls (s-cls r))
-         (vol (s-vol r)))
-        (funcall 'insert-stockprice-sql oid dx opn hi lo cls vol)))))
+(defun insert-stockprice (profile rows)
+  (pm:with-connection (conn-param profile)
+    (pm:with-transaction ()
+      (loop :for r :across rows :do
+        (let
+          ((oid (s-ticker r))
+           (dx (iso-8601-string (s-dx r)))
+           (opn (s-opn r))
+           (hi (s-hi r))
+           (lo (s-lo r))
+           (cls (s-cls r))
+           (vol (s-vol r)))
+          (funcall 'insert-stockprice-sql oid dx opn hi lo cls vol))))))
 
 (pm:defprepared insert-stockpurchase-sql
   "insert into stockmarket.stock_purchase (ticker_id,unix_time,price,volume) values ($1,$2,$3,$4)")
 
-(defun insert-stockpurchase (p)
-  (my-connect)
-  (pm:with-transaction ()
-    (let ((oid (p-ticker p))
-          (dx (iso-8601-string (p-dx p)))
-          (price (p-price p))
-          (vol (p-vol p)))
-    (funcall 'insert-stockpurchase-sql oid dx price vol))))
+(defun insert-stockpurchase (profile p)
+  (pm:with-connection (conn-param profile)
+    (pm:with-transaction ()
+      (let ((oid (p-ticker p))
+            (dx (iso-8601-string (p-dx p)))
+            (price (p-price p))
+            (vol (p-vol p)))
+      (funcall 'insert-stockpurchase-sql oid dx price vol)))))
 
 (pm:defprepared current-migration-sql
   "select max(version) from stockmarket.migrations")
