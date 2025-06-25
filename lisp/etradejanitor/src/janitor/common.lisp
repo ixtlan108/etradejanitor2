@@ -4,7 +4,8 @@
     #:timestamp-day
     #:timestamp-month
     #:format-timestring
-    #:timestamp-to-unix)
+    #:timestamp-to-unix
+    #:now)
   (:export
     #:cache
     #:cache-2
@@ -13,6 +14,7 @@
     #:read-csv
     #:date
     #:iso-8601-string
+    #:unix-time-now 
     #:diff-days
     #:between
     #:float-equals-p
@@ -115,6 +117,9 @@
 
 ;  (if (<= diff 0)
 ;    0
+
+(defun unix-time-now ()
+  (timestamp-to-unix (now)))
 
 (defun between (from-value to-value value &key (begin-open nil) (end-closed nil))
   (let ((opn-fn (if begin-open #'< #'<=))
