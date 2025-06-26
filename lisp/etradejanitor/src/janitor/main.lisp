@@ -246,15 +246,21 @@
 (defun atest ()
   (setf *profile* :atest))
 
-(defun curp ()
+(defun cup ()
   (format t "Current profile: ~a" *profile*))
 
-(defun curm ()
+(defun cmi ()
   (let* ((mig (first (db:current-migration-info *profile*)))
          (version (first mig))
          (comment (second mig)))
     (format t "[~a] Current migration ~a ~a" *profile* version comment)))
 
+
+(defun feed-status (&optional tickers)
+  (let ((tix (if (null tickers) tier-all tickers))) 
+    (if (listp tix)
+      (map 'list #'pa:feed-status tix)
+      (list (pa:feed-status tix)))))
 
   ;(format t "Current profile: ~a, current migration ~a" *profile* (first (first (db:current-migration *profile*)))))
 

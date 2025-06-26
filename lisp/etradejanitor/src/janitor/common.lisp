@@ -7,6 +7,7 @@
     #:timestamp-to-unix
     #:now)
   (:export
+    #:count-file-lines 
     #:cache
     #:cache-2
     #:clet
@@ -33,6 +34,25 @@
   (uiop:native-namestring "~/opt/etradejanitor2"))
   ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
 
+(defun count-file-lines (path)
+  "Count the number of non-empty lines in the file at PATH. A line is empty if
+it only contains space or tabulation characters."
+  (declare (type pathname path))
+  (with-open-file (stream path :element-type '(unsigned-byte 8))
+    (do ((nb-lines 0)
+         (blank-line t))
+        (nil)
+      (let ((octet (read-byte stream nil)))
+        (cond
+          ((or (null octet) (eq octet #.(char-code #\Newline)))
+           (unless blank-line
+             (incf nb-lines))
+           (when (null octet)
+             (return-from count-file-lines nb-lines))
+           (setf blank-line t))
+          ((and (/= octet #.(char-code #\Space))
+                (/= octet #.(char-code #\Tab)))
+           (setf blank-line nil)))))))
 
 (defmacro cache(fn)
   (let ((mydata (gensym)))

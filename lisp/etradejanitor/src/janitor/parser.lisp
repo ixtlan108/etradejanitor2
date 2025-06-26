@@ -7,12 +7,14 @@
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:import-from :janitor/common
-    #:*home*)
+    #:*home*
+    #:count-file-lines)
   (:export
     #:parse
     #:parse-spot
     #:cut-off
-    #:parse-cut-off))
+    #:parse-cut-off
+    #:feed-status))
 
 (in-package :janitor/parser)
 
@@ -63,6 +65,17 @@
         (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name)))))
       nil)))
 
+(defun feed-status (ticker)
+  (let ((csv-name (feed-csv-name ticker)))
+    (if (uiop:file-exists-p csv-name)
+      (let* ((line-count (count-file-lines (pathname csv-name)))
+             (csv-status (if (< line-count 2) :incomplete :ok)))
+        (list :ticker ticker :csv csv-status :lines line-count))
+      (list :ticker ticker :csv :missing))))
+    
+
+
+  
 ; 22.1.4. Standard Dispatching Macro Character Syntax
 ; The standard syntax includes forms introduced by the # character. These take the general form of a #, a second character that identifies the syntax, and following arguments in some form. If the second character is a letter, then case is not important; #O and #o are considered to be equivalent, for example.
 
