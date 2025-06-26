@@ -67,11 +67,11 @@
 
 (defun feed-status (ticker)
   (let ((csv-name (feed-csv-name ticker)))
-    (if (uiop:file-exists-p csv-name)
+    (if (uiop:file-exists-p csv-name  )
       (let* ((line-count (count-file-lines (pathname csv-name)))
              (csv-status (if (< line-count 2) :incomplete :ok)))
         (list :ticker ticker :csv csv-status :lines line-count))
-      (list :ticker ticker :csv :missing))))
+      (list :ticker ticker :csv :missing :lines 0))))
     
 
 

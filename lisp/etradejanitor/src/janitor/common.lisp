@@ -7,7 +7,7 @@
     #:timestamp-to-unix
     #:now)
   (:export
-    #:count-file-lines 
+    #:count-file-lines
     #:cache
     #:cache-2
     #:clet
@@ -15,7 +15,7 @@
     #:read-csv
     #:date
     #:iso-8601-string
-    #:unix-time-now 
+    #:unix-time-now
     #:diff-days
     #:between
     #:float-equals-p
@@ -31,8 +31,8 @@
 (in-package :janitor/common)
 
 (defparameter *home*
-  (uiop:native-namestring "~/opt/etradejanitor2"))
-  ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+  ;(uiop:native-namestring "~/opt/etradejanitor2"))
+  (uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
 
 (defun count-file-lines (path)
   "Count the number of non-empty lines in the file at PATH. A line is empty if
