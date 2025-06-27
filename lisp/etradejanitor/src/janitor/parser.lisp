@@ -81,7 +81,7 @@
         (if (< line-count 2)
           (list :ticker ticker :csv :incomplete :lines line-count)
           (let ((sp (latest-stockprice ticker)))
-            (list :ticker ticker :csv :ok :lines line-count :sp sp))))
+            (list :ticker ticker :csv :ok :lines line-count :tm sp))))
       (list :ticker ticker :csv :missing :lines 0))))
     
 

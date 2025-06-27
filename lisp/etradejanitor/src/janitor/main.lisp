@@ -15,7 +15,8 @@
     (#:yahoo #:janitor/yahoo)
     (#:pa #:janitor/parser))
   (:export
-    #:run))
+    #:run
+    #:retix))
 
 (in-package :janitor/main)
 
@@ -262,6 +263,24 @@
       (map 'list #'pa:feed-status tix)
       (list (pa:feed-status tix)))))
 
+(defun stockprice-tm-less-than (my-date) 
+  (lambda (v)
+    (let ((cur-sp (getf v :tm)))
+      (if cur-sp 
+        (progn 
+          (print cur-sp)
+          (local-time:timestamp< cur-sp my-date))
+        nil))))
+
+(defparameter dx (local-time:now))
+
+(defun retix (cur-date)
+  (let ((fstat (feed-status))
+        (fn (stockprice-tm-less-than cur-date))
+        result '())
+    (loop for item in fstat do
+          (if (funcall fn item) (push item result)))
+    result))
   ;(format t "Current profile: ~a, current migration ~a" *profile* (first (first (db:current-migration *profile*)))))
 
 ;(format t "~%~%~a~%~%" (cur-mig))
