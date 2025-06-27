@@ -267,9 +267,7 @@
   (lambda (v)
     (let ((cur-sp (getf v :tm)))
       (if cur-sp 
-        (progn 
-          (print cur-sp)
-          (local-time:timestamp< cur-sp my-date))
+        (local-time:timestamp< cur-sp my-date)
         nil))))
 
 (defparameter dx (local-time:now))
@@ -279,8 +277,11 @@
         (fn (stockprice-tm-less-than cur-date))
         result '())
     (loop for item in fstat do
-          (if (funcall fn item) (push item result)))
+          (let ((itemx (funcall fn item))) 
+            (if itemx 
+              (push item result))))
     result))
+
   ;(format t "Current profile: ~a, current migration ~a" *profile* (first (first (db:current-migration *profile*)))))
 
 ;(format t "~%~%~a~%~%" (cur-mig))
