@@ -31,8 +31,8 @@
 (in-package :janitor/common)
 
 (defparameter *home*
-  ;(uiop:native-namestring "~/opt/etradejanitor2"))
-  (uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+  (uiop:native-namestring "~/opt/etradejanitor2"))
+  ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
 
 (defun count-file-lines (path)
   "Count the number of non-empty lines in the file at PATH. A line is empty if

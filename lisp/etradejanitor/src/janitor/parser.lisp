@@ -65,15 +65,23 @@
         (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name)))))
       nil)))
 
+(defun latest-stockprice (ticker)
+  (let ((rows (parse ticker)))
+    (when rows 
+      (first (first rows)))))
+
 (defun feed-status (ticker)
   (let ((csv-name (feed-csv-name ticker)))
-    (if (uiop:file-exists-p csv-name  )
-      (let* ((line-count (count-file-lines (pathname csv-name)))
-             (csv-status (if (< line-count 2) :incomplete :ok)))
-        (list :ticker ticker :csv csv-status :lines line-count))
+    (if (uiop:file-exists-p csv-name)
+      (let ((line-count (count-file-lines (pathname csv-name))))
+        (if (< line-count 2)
+          (list :ticker ticker :csv :incomplete :lines line-count)
+          (let ((sp (latest-stockprice ticker)))
+            (list :ticker ticker :csv :ok :lines line-count :sp sp))))
       (list :ticker ticker :csv :missing :lines 0))))
     
 
+             ;(csv-status (if (< line-count 2) :incomplete :ok)))
 
   
 ; 22.1.4. Standard Dispatching Macro Character Syntax
