@@ -5,6 +5,7 @@
     #:timestamp-month
     #:format-timestring
     #:timestamp-to-unix
+    #:parse-timestring
     #:now)
   (:export
     #:count-file-lines
@@ -24,6 +25,7 @@
     #:vec-last
     #:partial
     #:gethx
+    #:csv->time
     #:*home*))
 
 ;(:import-from :trivia #:match)
@@ -33,6 +35,9 @@
 (defparameter *home*
   (uiop:native-namestring "~/opt/etradejanitor2"))
   ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
+
+(defun csv->time (s)
+  (parse-timestring (nth 0 (str:split " " s)) ))
 
 (defun count-file-lines (path)
   "Count the number of non-empty lines in the file at PATH. A line is empty if

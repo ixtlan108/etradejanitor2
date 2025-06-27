@@ -3,12 +3,14 @@
   (:local-nicknames
     (#:com #:janitor/common)
     (#:sprice #:janitor/stockmarket/stockprice))
-  (:import-from :local-time #:timestamp<)
+  (:import-from :local-time 
+      #:timestamp<)
   (:import-from :janitor/stockmarket/util
     #:ticker-oid-ht)
   (:import-from :janitor/common
     #:*home*
-    #:count-file-lines)
+    #:count-file-lines
+    #:csv->time)
   (:export
     #:parse
     #:parse-spot
@@ -65,10 +67,12 @@
         (sprice:mk-stockprice oid (first (nreverse (com:read-csv csv-name)))))
       nil)))
 
+
 (defun latest-stockprice (ticker)
   (let ((rows (parse ticker)))
-    (when rows 
-      (first (first rows)))))
+    (when rows
+      (let ((ts (first (first rows))))
+        (csv->time ts)))))
 
 (defun feed-status (ticker)
   (let ((csv-name (feed-csv-name ticker)))

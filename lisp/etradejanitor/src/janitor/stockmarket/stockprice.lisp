@@ -1,7 +1,7 @@
 (defpackage janitor/stockmarket/stockprice
   (:use :cl)
   (:import-from :local-time #:timestamp= #:parse-timestring)
-  (:import-from :janitor/common #:clet)
+  (:import-from :janitor/common #:clet #:csv->time)
   (:import-from :org.mapcar.parse-number #:parse-number)
   (:export
     #:stockprice
@@ -14,7 +14,8 @@
     #:s-hi
     #:s-lo
     #:s-cls
-    #:s-vol))
+    #:s-vol
+    #:csv->time))
 
 (in-package :janitor/stockmarket/stockprice)
 
@@ -30,8 +31,6 @@
     (equalp (s-cls s1) (s-cls s2))
     (equalp (s-vol s1) (s-vol s2))))
 
-(defun csv->time (s)
-  (parse-timestring (nth 0 (str:split " " s)) ))
 
 (defun mk-stockprice (oid row)
   (clet
