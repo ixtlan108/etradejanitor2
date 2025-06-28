@@ -103,8 +103,6 @@ it only contains space or tabulation characters."
   (when (>0 v)
     (elt v (- (length v) 1))))
 
-(defun gethx (ht key)
-  (gethash key ht))
 
 ;(defmacro fn (&rest forms)
 ;  `(lambda ,@forms))
@@ -122,14 +120,14 @@ it only contains space or tabulation characters."
   (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
 
 (defun iso-8601-string (dt)
-  (clet* (d (timestamp-day dt)
-         m (timestamp-month dt)
-         my-format
+  (let* ((d (timestamp-day dt))
+         (m (timestamp-month dt))
+         (my-format
           (cond
             ((and (< m 10) (< d 10)) '(:year "-0" :month "-0" :day))
             ((and (< m 10) (>= d 10)) '(:year "-0" :month "-" :day))
             ((and (>= m 10) (< d 10)) '(:year "-" :month "-0" :day))
-            (t                        '(:year "-" :month "-" :day))))
+            (t                        '(:year "-" :month "-" :day)))))
     (format-timestring nil dt :format my-format)))
 
 (defconstant +seconds-in-day+ 86400)
@@ -175,11 +173,11 @@ it only contains space or tabulation characters."
     (apply function (append args more-args))))
 
 ;;;--------------------------------- with-gensyms macro ----------------------------
-(defmacro with-gensyms (syms &body body)
-  `(let
-    ,(mapcar
-      (lambda (s) `(,s (gensym))) syms)
-        ,@body))
+; (defmacro with-gensyms (syms &body body)
+;   `(let
+;     ,(mapcar
+;       (lambda (s) `(,s (gensym))) syms)
+;         ,@body))
 ;;;--------------------------------- END with-gensyms macro ----------------------------
 
 ;;;--------------------------------- with-struct macro ----------------------------

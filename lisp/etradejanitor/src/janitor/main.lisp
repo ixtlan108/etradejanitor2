@@ -16,6 +16,10 @@
     (#:pa #:janitor/parser))
   (:export
     #:run
+    #:run-tier-1
+    #:run-tier-2
+    #:run-tier-3
+    #:run-tier-all
     #:retix))
 
 (in-package :janitor/main)
@@ -272,7 +276,7 @@
 
 (defparameter dx (local-time:now))
 
-(defun retix (cur-date)
+(defun retix (&optional (cur-date (local-time:now)))
   (let ((fstat (feed-status))
         (fn (stockprice-tm-less-than cur-date))
         result '())
