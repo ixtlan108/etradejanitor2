@@ -135,5 +135,6 @@
 (defun insert-migration-version (profile unix-time comment sql-file)
   (pm:with-connection (conn-param profile)
     (pm:with-transaction ()
-      (pm:execute-file sql-file t)
-      (funcall 'insert-migration-sql unix-time comment))))
+      (pm:execute-file sql-file t))))
+
+      ;(funcall 'insert-migration-sql unix-time comment))))

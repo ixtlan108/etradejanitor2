@@ -1,10 +1,10 @@
 (defpackage janitor/migrations
   (:use :cl)
   (:import-from :janitor/common
-    #:print-hash
-    #:unix-time-now
     #:*home*)
   (:local-nicknames
+    (#:lt #:local-time)
+    (#:co #:janitor/common)
     (#:db #:janitor/db))
   (:export
     #:exec-migrations
@@ -17,13 +17,17 @@
 (defparameter *feed*
   (format nil "~a/database/migrations" *home*))
 
+(defun capitalize-comment (comment)
+  (let* ((comment-parts (str:split #\_ comment))
+         (cap (string-capitalize (first comment-parts)))
+         (comment-partsx (cons cap (rest comment-parts))))
+    (format nil "~{~A~^ ~}" comment-partsx)))
+
 (defun unix-time-comment (fname_dot_sql)
   (let* ((splits (str:split "__" fname_dot_sql))
          (ut (first splits))
-         (comment-parts (str:split #\_ (first (str:split #\. (first (last splits))))))
-         (cap (string-capitalize (first comment-parts)))
-         (comment-partsx (cons cap (rest comment-parts))))
-    (values ut (format nil "~{~A~^ ~}" comment-partsx))))
+         (cap (capitalize-comment (first (str:split #\. (first (last splits)))))))
+    (values ut cap)))
 
 (defun unix-time-comment-sql (sql-file)
   (let ((fname_dot_sql (first (last (str:split #\/ (namestring sql-file)))))) ; 12345__this_is_a_comment.sql
@@ -56,7 +60,7 @@
     (if (= 0 (hash-table-count migs))
       (format t "Already at latest version: ~a" cur-version)
       (progn
-        (print-hash migs)
+        (co:print-hash migs)
         (format t "Current version: ~a~%" cur-version)
         (let ((mig-keys (get-migrations-keys migs)))
           (format t "mig-keys ~a~%" mig-keys)
@@ -70,17 +74,19 @@
                 (db:insert-migration-version profile cur-unix cur-comment (getf cur-sql :sql))))))))))
 
 
-(defun write-migration (fname)
+(defun write-migration (fname unix comment)
   (with-open-file (output fname
                     :direction         :output
                     :if-does-not-exist :create
                     :if-exists         :supersede) 
-    (format output "~a~%" "--- new migration ---")))
+    (format output "--- new migration ~a ---~%" (co:iso-8601-string (lt:now)))
+    (let ((pretty-comment (capitalize-comment comment)))
+      (format output "insert into stockmarket.migrations (version,comment) values (~a,'~a');" unix pretty-comment))))
 
 (defun new-migration (comment)
-  (let* ((unix (unix-time-now))
+  (let* ((unix (co:unix-time-now))
          (fname (format nil "~a/~a__~a.sql" *feed* unix comment)))
-    (write-migration fname)))
+    (write-migration fname unix comment)))
 
 
 

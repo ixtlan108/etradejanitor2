@@ -7,4 +7,16 @@ Dump:
   NB! /home/rcs/database/database_dumps must be chmod 777
 
 Restore:
-  1. psql -h hostname -d databasename -U username -f file.sql
+  1. sudo docker exec -it <postgres name> /bin/sh
+  2. psql -U postgres
+  3. create user <user name> with password <password>
+  4. create database <database name> owner <user name>
+  5. psql -h hostname -d databasename -U username -f file.sql
+
+Run an individal sql file:
+
+    psql -U username -d myDataBase -a -f myInsertFile.sql
+:
+  If the database is remote, use the same command with host:
+
+    psql -h host -U username -d myDataBase -a -f myInsertFile.sql
