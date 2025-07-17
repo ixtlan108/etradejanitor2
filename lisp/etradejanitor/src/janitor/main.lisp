@@ -20,6 +20,7 @@
     #:run-tier-2
     #:run-tier-3
     #:run-tier-all
+    #:download-all
     #:retix))
 
 (in-package :janitor/main)
@@ -137,6 +138,9 @@
     tdx-prod
     tdx-atest))
 
+(defun latest-dx ()
+  (let ((ht (db:latest-dx *profile*)))
+    (co:print-hash ht)))
 
 (defun process-db-tickers (tix)
   (dolist (ticker tix)

@@ -1,9 +1,7 @@
 (defpackage janitor/db
   (:use :cl)
   (:import-from :janitor/common
-    #:iso-8601-string
-    #:clet
-    #:clet*)
+    #:iso-8601-string)
   (:import-from :local-time
     #:parse-timestring
     #:timestamp+)
@@ -29,13 +27,14 @@
     #:current-migration-info 
     #:insert-migration-version 
     #:ticker-dx
+    #:latest-dx
     #:insert-stockprice
     #:insert-stockpurchase))
 
 (in-package :janitor/db)
 
 ;(defparameter host "172.20.1.6")
-(defparameter host "172.20.1.7")
+;(defparameter host "172.20.1.7")
 ;(defparameter host "localhost")
 (defparameter host-prod "172.20.1.6")
 (defparameter host-atest "172.20.1.7")
@@ -45,15 +44,15 @@
     (list "trader" "trader" "ok" host-prod :port 5432 :pooled-p t)
     (list "trader" "trader" "ok" host-atest :port 5432 :pooled-p t)))
 
-(defun my-connect ()
-  "Start the database connection."
-  (unless *database*
-    (pm:connect-toplevel
-      "trader" "trader" "ok" host :port 5432)))
+; (defun my-connect ()
+;   "Start the database connection."
+;   (unless *database*
+;     (pm:connect-toplevel
+;       "trader" "trader" "ok" host :port 5432)))
 
-(defun my-disconnect()
-  (print "Disconnecting from database...")
-  (pm:disconnect-toplevel))
+; (defun my-disconnect()
+;   (print "Disconnecting from database...")
+;   (pm:disconnect-toplevel))
 
 (defun db-ticker-dx ()
   (pm:query
@@ -63,25 +62,32 @@
     group by t.ticker"))
 
 
-(defun populate-ht (items)
+(defun populate-ht (items inc-date)
   (let ((ht (make-hash-table :test 'equal)))
     (loop for item in items
       do
-        (clet*
-          (ticker (nth 0 item)
-          dx (nth 1 item)
-          dxt (timestamp+ (parse-timestring dx) 1 :day))
+        (let*
+          ((ticker (nth 0 item))
+           (dx (nth 1 item))
+           (parsed-dx (parse-timestring dx))
+           (dxt (if inc-date 
+                (timestamp+ parsed-dx 1 :day)
+                parsed-dx)))
             (setf (gethash ticker ht) dxt)))
     ht))
 
-;(defun populate (items)
-
-(defun ticker-dx (profile)
+(defun ticker-dx-internal (profile inc-date)
   (pm:with-connection (conn-param profile)
     (let*
       ((items (db-ticker-dx))
-       (result (populate-ht items)))
+       (result (populate-ht items inc-date)))
       result)))
+
+(defun ticker-dx (profile)
+  (ticker-dx-internal profile t))
+
+(defun latest-dx (profile)
+  (ticker-dx-internal profile nil))
 
 (pm:defprepared insert-stockprice-sql
   "insert into stockmarket.stockprice (ticker_id,dx,opn,hi,lo,cls,vol) values ($1,$2,$3,$4,$5,$6,$7)")
