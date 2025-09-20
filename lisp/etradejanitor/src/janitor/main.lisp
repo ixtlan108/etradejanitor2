@@ -59,6 +59,7 @@
     :profile :atest))
 
 (defun prn-cfg ()
+  "Prints the content of *cfg*"
   (format t "~{~a ~}~%" *cfg*))
   ;(format t "~{~a~^, ~}" *cfg*))
 
@@ -66,26 +67,28 @@
   (getf *cfg* key))
 
 (defun validate-cut-offs (co dx)
+  "Check if there is a gap between the start date of stockprices to
+   be inserted, and the cut-off date"
   (if (cfg-get :skip-validate)
     (list :status :ok :result co)
     (let
       ((start-date (s-dx (co:vec-last co))))
-        (if (timestamp< dx start-date)
-          (list :status :start-date-error
-                :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
-          (list :status :ok :result co)))))
+      (if (timestamp< dx start-date)
+        (list :status :start-date-error
+              :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
+        (list :status :ok :result co)))))
 
 (defun print-status (cut-offs) 
-  "cut-offs <- parse-tickers"
+  "cut-offs -> parse-tickers"
   (dolist (c cut-offs)
     (let ((s (getf c :status)))
       (cond
         ((equal s :ok)
-          (let* ((rows (getf c :rows))
+         (let* ((rows (getf c :rows))
                 (ed (elt rows 0))
                 (sd (co:vec-last rows)))
-            (princ (format nil "ticker: ~a => status: ~a, num items: ~a, start: ~a, end:~a~%"
-                    (getf c :ticker) (getf c :status) (getf c :len) (co:iso-8601-string (s-dx sd)) (co:iso-8601-string (s-dx ed))))))
+           (princ (format nil "ticker: ~a => status: ~a, num items: ~a, start: ~a, end:~a~%"
+                   (getf c :ticker) (getf c :status) (getf c :len) (co:iso-8601-string (s-dx sd)) (co:iso-8601-string (s-dx ed))))))
         (t
           (if (getf c :err)
             (princ (format nil "ticker: ~a => status: ~a, err: ~a~%" (getf c :ticker) (getf c :status) (getf c :err)))
@@ -112,17 +115,17 @@
       (let ((m (parse-ticker ticker ht-tdx :skip-today skip-today)))
         (match m
           ((list :status :empty-cutoffs)
-            (push (list :status :empty-cutoffs :ticker ticker) remaining))
+           (push (list :status :empty-cutoffs :ticker ticker) remaining))
           ((list :status :empty-items)
-            (push (list :status :empty-items :ticker ticker) remaining))
+           (push (list :status :empty-items :ticker ticker) remaining))
           ((list :status :empty-dx)
-            (push (list :status :empty-dx :ticker ticker) remaining))
+           (push (list :status :empty-dx :ticker ticker) remaining))
           ((list :status :ok :result x)
-            (push (list :status :ok :ticker ticker :len (length x) :rows x) remaining))
+           (push (list :status :ok :ticker ticker :len (length x) :rows x) remaining))
           ((list :status :missing-csv)
-            (push (list :status :missing-csv :ticker ticker) remaining))
+           (push (list :status :missing-csv :ticker ticker) remaining))
           ((list :status :start-date-error :err error)
-            (push (list :status :start-date-error :ticker ticker :err error) remaining))
+           (push (list :status :start-date-error :ticker ticker :err error) remaining))
           (_
             (print m)
             (push (list :status :unknown :ticker ticker) remaining)))))
@@ -139,16 +142,20 @@
     tdx-atest))
 
 (defun latest-dx ()
+  "Print the latest stockprice dx in the database"
   (let ((ht (db:latest-dx *profile*)))
-    (co:print-hash ht)))
+    (co:print-hash ht))
+  (format t "Current profile: ~a~%" *profile*))
 
 (defun process-db-tickers (tix)
+  "Insert stockprices in database"
   (dolist (ticker tix)
     (when (equal (getf ticker :status) :ok)
       (db:insert-stockprice *profile* (getf ticker :rows))))
   (funcall (get-tdx) :invalidate t))
 
 (defun run (tickers)
+  "Insert stockprices in database"
   (let ((tix (parse-tickers (funcall (get-tdx)) tickers (cfg-get :skip-today))))
     (print-status tix)
     (unless (cfg-get :skip-db)
@@ -157,6 +164,7 @@
     tix))
 
 (defun run-tier-n (tier)
+  "Insert stockprices in database for tickers = tier"
   (prn-cfg)
   (if (cfg-get :invalidate-tdx)
     (funcall (get-tdx) :invalidate t))
@@ -174,47 +182,54 @@
 
 (defun run-tier-1 
   (&key 
-    (s-db nil) 
-    (i-tdx nil) 
-    (s-val nil) 
-    (s-today nil))
+    (s-db nil)      ; if t, skip updating the database
+    (i-tdx nil)     ; if t, empty the tdx-prod/tds-atest cache 
+    (s-val nil)     ; if t, skip validation (gap between cut-off and start date)
+    (s-today nil))  ; if t, do not insert todays stockprices
+  "Insert stockprices in database for tickers = tier-1"
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-1)))
 
 (defun run-tier-2 
   (&key 
-    (s-db nil) 
-    (i-tdx nil) 
-    (s-val nil) 
-    (s-today nil))
+    (s-db nil)      ; if t, skip updating the database
+    (i-tdx nil)     ; if t, empty the tdx-prod/tds-atest cache 
+    (s-val nil)     ; if t, skip validation (gap between cut-off and start date)
+    (s-today nil))  ; if t, do not insert todays stockprices
+  "Insert stockprices in database for tickers = tier-2"
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-2)))
 
 (defun run-tier-3 
   (&key 
-    (s-db nil) 
-    (i-tdx nil) 
-    (s-val nil) 
-    (s-today nil))
+    (s-db nil)      ; if t, skip updating the database
+    (i-tdx nil)     ; if t, empty the tdx-prod/tds-atest cache 
+    (s-val nil)     ; if t, skip validation (gap between cut-off and start date)
+    (s-today nil))  ; if t, do not insert todays stockprices
+  "Insert stockprices in database for tickers = tier-3"
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-3)))
 
 (defun run-tier-all 
   (&key 
-    (s-db nil) 
-    (i-tdx nil) 
-    (s-val nil) 
-    (s-today nil))
+    (s-db nil)      ; if t, skip updating the database
+    (i-tdx nil)     ; if t, empty the tdx-prod/tds-atest cache 
+    (s-val nil)     ; if t, skip validation (gap between cut-off and start date)
+    (s-today nil))  ; if t, do not insert todays stockprices
+  "Insert stockprices in database for all tickers"
   (let ((*cfg* (config-cfg s-db i-tdx s-val s-today)))
     (run-tier-n tier-all)))
 
 (defun download-tickers (tix)
+  "Download tickers = tix"
   (yahoo:download-tickers (funcall (get-tdx)) tix))
 
 (defun download-all (&key (i-tdx nil))
-  (if i-tdx
-    (funcall (get-tdx) :invalidate t))
-  (yahoo:download-tickers (funcall (get-tdx)) tier-all))
+  "Download all tickers"
+  (let ((tdxx (get-tdx)))
+    (if i-tdx
+      (funcall tdxx :invalidate t))
+    (yahoo:download-tickers (funcall tdxx) tier-all)))
 
 (defun show-yahoo-periods ()
   (let ((periods (yahoo::show-yahoo-periods (funcall (get-tdx)) tier-all)))

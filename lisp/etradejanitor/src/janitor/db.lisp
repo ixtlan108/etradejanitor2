@@ -36,13 +36,12 @@
 ;(defparameter host "172.20.1.6")
 ;(defparameter host "172.20.1.7")
 ;(defparameter host "localhost")
-(defparameter host-prod "172.20.1.6")
-(defparameter host-atest "172.20.1.7")
+(defparameter host "172.20.1.6")
 
 (defun conn-param (profile)
   (if (eq profile :prod)
-    (list "trader" "trader" "ok" host-prod :port 5432 :pooled-p t)
-    (list "trader" "trader" "ok" host-atest :port 5432 :pooled-p t)))
+    (list "trader" "trader" "ok" host :port 5432 :pooled-p t)
+    (list "trader_atest" "trader" "ok" host :port 5432 :pooled-p t)))
 
 ; (defun my-connect ()
 ;   "Start the database connection."
@@ -71,9 +70,9 @@
            (dx (nth 1 item))
            (parsed-dx (parse-timestring dx))
            (dxt (if inc-date 
-                (timestamp+ parsed-dx 1 :day)
-                parsed-dx)))
-            (setf (gethash ticker ht) dxt)))
+                 (timestamp+ parsed-dx 1 :day)
+                 parsed-dx)))
+          (setf (gethash ticker ht) dxt)))
     ht))
 
 (defun ticker-dx-internal (profile inc-date)
@@ -116,7 +115,7 @@
             (dx (iso-8601-string (p-dx p)))
             (price (p-price p))
             (vol (p-vol p)))
-      (funcall 'insert-stockpurchase-sql oid dx price vol)))))
+       (funcall 'insert-stockpurchase-sql oid dx price vol)))))
 
 (pm:defprepared current-migration-sql
   "select max(version) from stockmarket.migrations")
