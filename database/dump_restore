@@ -20,3 +20,15 @@ Run an individal sql file:
   If the database is remote, use the same command with host:
 
     psql -h host -U username -d myDataBase -a -f myInsertFile.sql
+
+Install yfinance
+
+        1) Install python3 virtual env
+                python -m venv /home/rcs/opt/etradejanitor2/python/venv
+
+        2) Activate virtual evn
+                cd /home/rcs/opt/etradejanitor2/python
+                source venv/bin/activate
+
+        3) Install yfinance
+                pip3 install yfinance

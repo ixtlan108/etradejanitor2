@@ -37,7 +37,9 @@
 ; 18,19,21,9,17
 
 (defparameter tier-3
-  (list "BAKKA" "BWLPG" "GOGL" "NAS" "SUBC" "TGS"))
+  (list "BAKKA" "BWLPG" "NAS" "SUBC" "TGS"))
+
+;(list "BAKKA" "BWLPG" "GOGL" "NAS" "SUBC" "TGS")
   
 ;(list "BAKKA" "BWLPG" "DNO" "GOGL" "NAS" "SUBC" "TGS"))
 
@@ -48,7 +50,7 @@
 
 ;(defvar tickers-all ())
 
-(defparameter *profile* :atest)
+(defparameter *profile* :prod)
 
 (defparameter *cfg*
   (list 
@@ -94,20 +96,23 @@
             (princ (format nil "ticker: ~a => status: ~a, err: ~a~%" (getf c :ticker) (getf c :status) (getf c :err)))
             (princ (format nil "ticker: ~a => status: ~a~%" (getf c :ticker) (getf c :status)))))))))
 
-(defun parse-ticker (ticker ht &key (skip-today))
-  (let ((cur-dx (gethash ticker ht)))
+(defun parse-ticker (ticker ht-tdx &key (skip-today))
+  (let ((cur-dx (gethash ticker ht-tdx)))
     (if cur-dx
-      (let
-        ((oid (gethash ticker ticker-oid-ht))
-         (items (pa:parse ticker)))
+      (let ((oid (gethash ticker ticker-oid-ht))
+            (items (pa:parse ticker)))
         (if items
-          (let ((itemsx (if skip-today (rest items) items)))
-            (let ((cut-offs (pa:cut-off itemsx oid cur-dx)))
-              (if (>0 cut-offs)
-                (validate-cut-offs cut-offs cur-dx)
-                (list :status :empty-cutoffs))))
-          (list :status :missing-csv)))
+           (let ((itemsx (if skip-today (rest items) items)))
+             (let ((cut-offs (pa:cut-off itemsx oid cur-dx)))
+               (if (>0 cut-offs)
+                 (validate-cut-offs cut-offs cur-dx)
+                 (list :status :empty-cutoffs))))
+           (list :status :missing-csv)))
       (list :status :empty-dx))))
+
+(defun parse-ticker-2 (ticker)
+  (parse-ticker ticker (funcall (get-tdx)) :skip-today t))
+
 
 (defun parse-tickers (ht-tdx tickers skip-today)
   (let ((remaining '()))
@@ -153,6 +158,7 @@
     (when (equal (getf ticker :status) :ok)
       (db:insert-stockprice *profile* (getf ticker :rows))))
   (funcall (get-tdx) :invalidate t))
+
 
 (defun run (tickers)
   "Insert stockprices in database"

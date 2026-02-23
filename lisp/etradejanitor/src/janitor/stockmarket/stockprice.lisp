@@ -1,7 +1,7 @@
 (defpackage janitor/stockmarket/stockprice
   (:use :cl)
   (:import-from :local-time #:timestamp= #:parse-timestring)
-  (:import-from :janitor/common #:clet #:csv->time)
+  (:import-from :janitor/common #:csv->time)
   (:import-from :org.mapcar.parse-number #:parse-number)
   (:export
     #:stockprice
@@ -33,11 +33,10 @@
 
 
 (defun mk-stockprice (oid row)
-  (clet
-    (dx (csv->time (nth 0 row))
-    opn (parse-number (nth 1 row))
-    hi (parse-number (nth 2 row))
-    lo (parse-number (nth 3 row))
-    cls (parse-number (nth 4 row))
-    vol (parse-number (nth 5 row)))
+  (let ((dx (csv->time (nth 0 row)))
+        (opn (parse-number (nth 1 row)))
+        (hi (parse-number (nth 2 row)))
+        (lo (parse-number (nth 3 row)))
+        (cls (parse-number (nth 4 row)))
+        (vol (parse-number (nth 5 row))))
     (make-stockprice :ticker oid :dx dx :opn opn :hi hi :lo lo :cls cls :vol vol)))
