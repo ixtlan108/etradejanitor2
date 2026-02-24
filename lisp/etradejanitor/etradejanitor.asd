@@ -4,12 +4,13 @@
   :license ""
   :depends-on
     ("str"
-    "cl-csv"
-    "postmodern"
-    "local-time"
-    "parse-number"
-    "trivia"
-    "cl-redis")
+     "cl-csv"
+     "postmodern"
+     "local-time"
+     "parse-number"
+     "serapeum"
+     "trivia"
+     "cl-redis")
   :components ((:module "src"
                 :components
                   ((:file "janitor/common")
@@ -62,7 +63,7 @@
   :components ((:module "t"
                 :components
                 (
-                  (:file "janitor-test")
-                )))
+                  (:file "janitor-test"))))
+                
   :description "Test system for etradejanitor"
   :perform (test-op (op c) (symbol-call :rove :run c)))

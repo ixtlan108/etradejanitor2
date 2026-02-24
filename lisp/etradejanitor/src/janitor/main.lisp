@@ -264,6 +264,7 @@
   (let ((prices (remove-if #'null (mapcar #'pa:parse-spot tickers))))
     (rutil:save-stockprices prices db save-open)))
 
+(defun opening-price-redis (tickers &key (db 0)))
 
 (defun prn-tdx (&key (i-tdx nil))
   (if i-tdx
