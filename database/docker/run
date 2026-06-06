@@ -1,0 +1,67 @@
+#/bin/bash
+
+DUMP_LOC="/home/rcs/database/database_dumps"
+DUMP_PG="/home/rcs/database/database_dumps"
+
+KLAX_LOC="/home/rcs/opt/etradejanitor2/database"
+KLAX_PG="/home/rcs/etradejanitor2"
+
+INIT_LOC="./docker_entry_point"
+INIT_PG="/docker-entrypoint-initdb.d"
+
+VER="rcs/postgres:17.2"
+
+NET="pgutil_lofsrud" 
+
+IP="172.20.1.8"
+
+usage()
+{
+cat << EOF
+usage: $0 options
+
+OPTIONS:
+   -h      Show this message
+   -a      Action (1: Create container (default), 2: List containers, 3: Enter container, 4: Delete container )
+EOF
+}
+
+ACTION=1
+
+while getopts “ha:” OPTION
+do
+     case $OPTION in
+         h)
+             usage
+             exit 1
+             ;;
+         a)
+             ACTION=$OPTARG
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+
+case $ACTION in
+
+    1)   sudo docker container run -d --rm --network $NET --ip $IP -e \
+         POSTGRES_PASSWORD=ok -e POSTGRES_USER=trader \
+         -v $INIT_LOC:$INIT_PG -v $DUMP_LOC:$DUMP_PG -v $KLAX_LOC:$KLAX_PG \
+          --name trader_itest $VER
+      ;;
+
+    2)   sudo docker ps -a
+      ;;
+
+    3)   sudo docker exec -it trader_itest /bin/sh
+      ;;
+
+    4)   sudo docker rm -f trader_itest
+      ;;
+
+esac
+
+exit 0
