@@ -17,6 +17,22 @@
 (defparameter *feed*
   (format nil "~a/database/migrations" *home*))
 
+(deftype dbvar-enum () '(member :postgres :tcp :inss :insp :insm))
+  
+(declaim (ftype (function (dbvar-enum) t) db-variant-paths))
+(defun db-variant-paths (db-var)
+  (cond 
+    ((eq db-var :postgres) (list "shared" "postgres" "inserts/shared" "inserts/postgres"))
+    ((eq db-var :tcm) (list "shared" "mssql" "testcontainer/shared" "testcontainer/mssql"))
+    ((eq db-var :tcp) (list "shared" "postgres" "testcontainer/shared" "testcontainer/postgres"))))
+
+(declaim (ftype (function (dbvar-enum) string) output-path))
+(defun output-path (db-var)
+  (case db-var
+    (:postgres "postgres")
+    (:tcp "testcontainer")
+    (:insp "inserts")))
+
 (defun capitalize-comment (comment)
   (let* ((comment-parts (str:split #\_ comment))
          (cap (string-capitalize (first comment-parts)))
