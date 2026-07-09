@@ -3,6 +3,7 @@
   (:import-from :cl-ppcre
       #:register-groups-bind)
   (:import-from :janitor/common
+    #:unix-time-now
     #:*home*)
   (:local-nicknames
     (#:lt #:local-time)
@@ -28,8 +29,8 @@
 (declaim (ftype (function (dbvar-enum) t) db-variant-paths))
 (defun db-variant-paths (db-var)
   (cond 
-    ((eq db-var :postgres) (list "shared" "postgres" "inserts/shared" "inserts/postgres"))
-    ((eq db-var :tcp) (list "shared" "postgres" "testcontainer/shared" "testcontainer/postgres"))))
+    ((eq db-var :postgres) (list "postgres" "inserts/postgres"))
+    ((eq db-var :tcp) (list "postgres" "testcontainer/postgres"))))
 
 (declaim (ftype (function (dbvar-enum) string) output-path))
 (defun output-path (db-var)

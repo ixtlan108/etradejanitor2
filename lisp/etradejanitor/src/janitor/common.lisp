@@ -153,7 +153,7 @@ it only contains space or tabulation characters."
 ;    0
 
 (defun unix-time-now ()
-  (timestamp-to-unix (lt:now)))
+  (lt:timestamp-to-unix (lt:now)))
 
 (defun between (from-value to-value value &key (begin-open nil) (end-closed nil))
   (let ((opn-fn (if begin-open #'< #'<=))
