@@ -1,12 +1,7 @@
 (defpackage janitor/common
   (:use :cl)
-  (:import-from :local-time
-    #:timestamp-day
-    #:timestamp-month
-    #:format-timestring
-    #:timestamp-to-unix
-    #:parse-timestring
-    #:now)
+  (:local-nicknames
+    (#:lt #:local-time))
   (:export
     #:count-file-lines
     #:cache
@@ -26,6 +21,8 @@
     #:partial
     #:gethx
     #:csv->time
+    #:format-local-time 
+    #:flatten
     #:*home*))
 
 ;(:import-from :trivia #:match)
@@ -36,8 +33,22 @@
   (uiop:native-namestring "~/opt/etradejanitor2"))
   ;(uiop:native-namestring "~/Projects/lisp/etradejanitor2"))
 
+(defun format-10 (val) 
+  (if (< val 10)
+    (format nil "0~a" val)
+    (format nil "~a" val)))
+
+(defun format-local-time (tm)
+  (lt:with-decoded-timestamp 
+    (:year y :month m :day d :hour h :minute mi :timezone local-time:+utc-zone+) tm
+      (format nil "~a-~a-~a ~a:~a" y (format-10 m) (format-10 d) (format-10 h) (format-10 mi))))
+
+(defun flatten (ls)
+  (labels ((mklist (x) (if (listp x) x (list x))))
+    (mapcan #'(lambda (z) (if (atom z) (mklist z) (flatten z))) ls)))
+
 (defun csv->time (s)
-  (parse-timestring (nth 0 (str:split " " s)) ))
+  (lt:parse-timestring (nth 0 (str:split " " s))))
 
 (defun count-file-lines (path)
   "Count the number of non-empty lines in the file at PATH. A line is empty if
@@ -120,21 +131,21 @@ it only contains space or tabulation characters."
   (local-time:encode-timestamp 0 0 0 0 day month year :timezone local-time:+utc-zone+))
 
 (defun iso-8601-string (dt)
-  (let* ((d (timestamp-day dt))
-         (m (timestamp-month dt))
+  (let* ((d (lt:timestamp-day dt))
+         (m (lt:timestamp-month dt))
          (my-format
           (cond
             ((and (< m 10) (< d 10)) '(:year "-0" :month "-0" :day))
             ((and (< m 10) (>= d 10)) '(:year "-0" :month "-" :day))
             ((and (>= m 10) (< d 10)) '(:year "-" :month "-0" :day))
             (t                        '(:year "-" :month "-" :day)))))
-    (format-timestring nil dt :format my-format)))
+    (lt:format-timestring nil dt :format my-format)))
 
 (defconstant +seconds-in-day+ 86400)
 
 (defun diff-days (from-date to-date)
-  (let* ((ttu-from  (timestamp-to-unix from-date))
-         (ttu-to    (timestamp-to-unix to-date))
+  (let* ((ttu-from  (lt:timestamp-to-unix from-date))
+         (ttu-to    (lt:timestamp-to-unix to-date))
          (diff      (- ttu-to ttu-from)))
     (/ diff +seconds-in-day+)))
 
@@ -142,7 +153,7 @@ it only contains space or tabulation characters."
 ;    0
 
 (defun unix-time-now ()
-  (timestamp-to-unix (now)))
+  (timestamp-to-unix (lt:now)))
 
 (defun between (from-value to-value value &key (begin-open nil) (end-closed nil))
   (let ((opn-fn (if begin-open #'< #'<=))
@@ -213,16 +224,16 @@ it only contains space or tabulation characters."
 (defun build-call (op fns)
   (let ((g (gensym)))
     `(lambda (,g) (,op ,@(mapcar #'(lambda (f) `(,(rbuild f) ,g))
-      fns)))))
+                          fns)))))
 
 (defun build-compose (fns)
   (let ((g (gensym)))
     `(lambda (,g) ,(labels ((rec (fns)
-                      (if fns
-                        `(,(rbuild (car fns))
-                          ,(rec (cdr fns)))
-                        g)))
-    (rec fns)))))
+                             (if fns
+                               `(,(rbuild (car fns))
+                                 ,(rec (cdr fns)))
+                               g)))
+                    (rec fns)))))
 ;;;--------------------------------- END fn macro ----------------------------
 
 ; (map 'list (partial '+ 2) (list 1 2 3)) ;=> (3 4 5)
