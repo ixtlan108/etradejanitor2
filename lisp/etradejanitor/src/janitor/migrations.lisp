@@ -22,9 +22,8 @@
 (declaim (ftype (function (dbvar-enum) t) db-variant-paths))
 (defun db-variant-paths (db-var)
   (cond 
-    ((eq db-var :postgres) (list "shared" "postgres" "inserts/shared" "inserts/postgres"))
-    ((eq db-var :tcm) (list "shared" "mssql" "testcontainer/shared" "testcontainer/mssql"))
-    ((eq db-var :tcp) (list "shared" "postgres" "testcontainer/shared" "testcontainer/postgres"))))
+    ((eq db-var :postgres) (list "postgres" "inserts"))
+    ((eq db-var :tcp) (list "postgres" "testcontainer"))))
 
 (declaim (ftype (function (dbvar-enum) string) output-path))
 (defun output-path (db-var)
@@ -32,6 +31,12 @@
     (:postgres "postgres")
     (:tcp "testcontainer")
     (:insp "inserts")))
+
+(defun info()
+  (let ((dbvars (list :postgres :tcp :insp)))
+    (loop :for v :in dbvars :do (format t "New Migration Output path: ~a => ~a~%" v (output-path v))))
+  (let ((dbvars2 (list :postgres :tcp)))
+    (loop :for v :in dbvars2 :do (format t "Db variant paths: ~a => ~a~%" v (db-variant-paths v)))))
 
 (defun capitalize-comment (comment)
   (let* ((comment-parts (str:split #\_ comment))
@@ -101,7 +106,8 @@
 
 (defun new-migration (comment)
   (let* ((unix (co:unix-time-now))
-         (fname (format nil "~a/~a__~a.sql" *feed* unix comment)))
+         (dbv-path (output-path db-var))
+         (fname (format nil "~a/~a/~a__~a.sql" *feed* dbv-path unix comment)))
     (write-migration fname unix comment)))
 
 
