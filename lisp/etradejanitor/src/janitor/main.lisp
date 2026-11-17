@@ -68,17 +68,17 @@
 (defun cfg-get (key)
   (getf *cfg* key))
 
-(defun validate-cut-offs (co dx)
+(defun validate-cut-offs (cut-offs dx)
   "Check if there is a gap between the start date of stockprices to
    be inserted, and the cut-off date"
   (if (cfg-get :skip-validate)
-    (list :status :ok :result co)
+    (list :status :ok :result cut-offs)
     (let
-      ((start-date (s-dx (co:vec-last co))))
+      ((start-date (s-dx (co:vec-last cut-offs))))
       (if (timestamp< dx start-date)
         (list :status :start-date-error
               :err (format nil "Start date: ~a is greater than cut-off date: ~a" start-date dx))
-        (list :status :ok :result co)))))
+        (list :status :ok :result cut-offs)))))
 
 (defun print-status (cut-offs) 
   "cut-offs -> parse-tickers"
@@ -267,20 +267,26 @@
 (defun opening-price-redis (tickers &key (db 0)))
 
 (defun prn-tdx (&key (i-tdx nil))
+  "Show the last updated stockprice in the database for each stock. 
+If key I-TDX is t, will invalidate the cached tdx-atest/tdx-prod."
   (if i-tdx
     (funcall (get-tdx) :invalidate t))
   (co:print-hash (funcall (get-tdx))))
 
 (defun prod ()
+  "Set current profile to :prod."
   (setf *profile* :prod))
 
 (defun atest ()
+  "Set current profile to :atest."
   (setf *profile* :atest))
 
 (defun cup ()
+  "Show current profile."
   (format t "Current profile: ~a" *profile*))
 
 (defun cmi ()
+  "Show current migration."
   (let* ((mig (first (db:current-migration-info *profile*)))
          (version (first mig))
          (comment (second mig)))
@@ -288,6 +294,9 @@
 
 
 (defun feed-status (&optional tickers)
+  "Show current status for TICKERS: csv status, 
+number of lines in the csv, and last date in the csv.
+If optional TICKERS is not set, all tickers."
   (let ((tix (if (null tickers) tier-all tickers))) 
     (if (listp tix)
       (map 'list #'pa:feed-status tix)
@@ -312,6 +321,19 @@
               (push item result))))
     result))
 
+
+(defun help ()
+  "Display docstrings for a list of function SYMBOLS."
+  (let ((symbols (list 'cup 'cmi 'prod 'atest 'prn-tdx 'feed-status)))
+    (loop for sym in symbols do
+      (format t "~&------ ~A ------~%" sym)
+      (let ((doc (documentation sym 'function)))
+        (if doc
+            (format t "~A~%~%" doc)
+            (format t "(no documentation)"))))))
+
+;; Usage:
+;; (help '(square reverse-string with-timing))
   ;(format t "Current profile: ~a, current migration ~a" *profile* (first (first (db:current-migration *profile*)))))
 
 ;(format t "~%~%~a~%~%" (cur-mig))

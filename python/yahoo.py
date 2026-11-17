@@ -71,16 +71,24 @@ def save_to_cvs(t,period):
 def spot(t):
   download(t,"1d",SPOT_FEED)
 
+def derivatives(t):
+  ticker = y.Ticker("%s.OL" % t)
+  d = ticker.options("2026-09-18")
+  print(d)
+
 if __name__ == '__main__':
   parser = OptionParser()
   parser.add_option("-t","--ticker", dest="ticker", metavar="TICKER", help="Stock ticker")
   parser.add_option("-p","--period", dest="period", metavar="YAHOO_PERIOD", help="Valid periods: 1d, 5d, 1m, 3m, 6m, 1y, 2y, 5y, 10y")
   parser.add_option("-x","--spot", action="store_true", default=False, help="Download Spot. Default: False")
+  parser.add_option("-q","--derivatives", action="store_true", default=False, help="Download Derivatives. Default: False")
 
   (opts, args) = parser.parse_args()
 
   if opts.spot == True:
     spot(opts.ticker)
+  elif opts.derivatives == True:
+    derivatives(opts.ticker)
   else:
     if validate_period(opts.period) != True:
       print ("Invalid period: ",opts.period )

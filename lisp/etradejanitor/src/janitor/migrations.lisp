@@ -122,7 +122,7 @@
                     :if-exists         :supersede)
     (format output "--- new migration ~a ---~%" (co:iso-8601-string (lt:now)))
     (let ((pretty-comment (pretty-comment comment)))
-      (format output "insert into art.migrations (version,comment) values (~a,'~a');" unix pretty-comment))))
+      (format output "insert into stockmarket.migrations (version,comment) values (~a,'~a');" unix pretty-comment))))
 
 
 
