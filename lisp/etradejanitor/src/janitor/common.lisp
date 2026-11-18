@@ -183,6 +183,24 @@ it only contains space or tabulation characters."
   (lambda (&rest more-args)
     (apply function (append args more-args))))
 
+(defclass htx () ((ht :initform (make-hash-table :test #'equal) :reader ht :initarg :ht)))
+
+(defmethod htx-add ((h htx) key val) 
+  (let ((cur-ht (ht h)))
+    (setf (gethash key cur-ht) val)))
+
+(defmethod htx-get ((h htx) key) 
+  (let ((cur-ht (ht h)))
+    (gethash key cur-ht)))
+
+(defmethod htx-keys ((h htx))
+  (let* ((cur-ht (ht h))
+         (keys (loop for key being the hash-key of cur-ht collect key)))
+    (sort keys #'<)))
+
+(defmethod htx-count ((h htx))
+  (hash-table-count (ht h)))
+
 ;;;--------------------------------- with-gensyms macro ----------------------------
 ; (defmacro with-gensyms (syms &body body)
 ;   `(let
