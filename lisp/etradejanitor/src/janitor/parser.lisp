@@ -37,18 +37,22 @@
 ; (2025-01-02 00:00:00+01:00,301.1000061035156,305.5,301.1000061035156,304.8999938964844,494966,0.0,0.0)
 ; ("2025-03-28 00:00:00+01:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")
 
+
+(defun mk-stockprice-fn-2 (row ticker-oid cut-off-date)
+  (let* ((price (sprice:mk-stockprice ticker-oid row))
+         (cur-dx (sprice:s-dx price)))
+    (if (timestamp< cur-dx cut-off-date)
+      (progn
+        (setq hit t)
+        nil)
+      price)))
+
 (defun mk-stockprice-fn (ticker-oid cut-off-date)
   (let ((hit nil))
     (lambda (row)
-      (let ((price (sprice:mk-stockprice ticker-oid row)))
-        (if hit
-          nil
-          (let ((cur-dx (sprice:s-dx price)))
-            (if (timestamp< cur-dx cut-off-date)
-              (progn
-                (setq hit t)
-                nil)
-              price)))))))
+      (if hit
+        nil
+        (mk-stockprice-fn-2 row ticker-oid cut-off-date)))))
 
 (defun cut-off (items ticker-oid cut-off-date)
   (let ((fx (mk-stockprice-fn ticker-oid cut-off-date)))
