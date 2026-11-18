@@ -1,16 +1,15 @@
 (defpackage etradejanitor/tests/janitor-test
   (:use :cl
         :rove)
-  (:import-from :local-time #:parse-timestring #:timestamp=)
   (:import-from :janitor/common
-    #:clet
-    #:clet*
     #:date
     #:iso-8601-string
     #:between
     #:float-equals-p
     #:*home*)
   (:local-nicknames
+    (#:lt #:local-time)
+    (#:co #:janitor/common)
     (#:ma #:janitor/main)
     (#:ya #:janitor/yahoo)
     (#:mig #:janitor/migrations)
@@ -60,31 +59,32 @@
 (defvar aug-2027-2 (date 2027 8 2))
 
 (defun test-mig-path (unix-time comment suffix)
-  (let ((p (pathname (format nil "~a/~a__~a.sql" test-feed-mig unix-time suffix))))
-    (list :unix unix-time :comment comment :sql p)))
+  (let ((p (pathname (format nil "~a/postgres/~a__~a.sql" test-feed-mig unix-time suffix)))
+        (tm (co:format-local-time (lt:unix-to-timestamp unix-time))))
+    (list :unix unix-time :comment comment :sql p :place nil :tm tm)))
         
 
 (deftest test-migrations
   (testing "migrations"
     (let* ((mig::*feed* test-feed-mig)
-           (result (mig:get-migrations 1746602800)))
+           (result (mig::get-migrations 1746602800 :postgres)))
       (ok (= 2 (hash-table-count result)))
       (let ((p1 (gethash 1746702000 result)))
         (ok (equal (test-mig-path 1746702000 "The next one" "the_next_one") p1)))))
   (testing "migrations edge case"
     (let* ((mig::*feed* test-feed-mig)
-           (result (mig:get-migrations 1746702000)))
+           (result (mig::get-migrations 1746702000 :postgres)))
       (ok (= 1 (hash-table-count result)))
       (let ((p2 (gethash 1746902800 result)))
         (ok (equal (test-mig-path 1746902800 "The last one" "the_last_one") p2)))))
   (testing "migrations sorted keys"
     (let* ((mig::*feed* test-feed-mig)
-           (mig-ht (mig:get-migrations 1745000000))
+           (mig-ht (mig::get-migrations 1745000000 :postgres))
            (keys (mig::get-migrations-keys mig-ht)))
       (ok (equal (list 1746502000 1746702000 1746902800) keys))))
   (testing "migrations no sql files left"
     (let* ((mig::*feed* test-feed-mig)
-           (mig-ht (mig:get-migrations 1746903000))
+           (mig-ht (mig::get-migrations 1746903000 :postgres))
            (keys (mig::get-migrations-keys mig-ht)))
       (ok (= 0 (hash-table-count mig-ht)))
       (ok (equal nil keys)))))
@@ -123,57 +123,57 @@
 
 (deftest test-types
   (testing "Stockprice"
-    (clet
-      (actual
-        (sprice:mk-stockprice 3
-          '("2025-03-28 00:00:00+00:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0")))
+    (let
+      ((actual
+         (sprice:mk-stockprice 3
+            '("2025-03-28 00:00:00+00:00" "317.1000061035156" "319.29998779296875" "311.8999938964844" "314.20001220703125" "497342" "0.0" "0.0"))))
       (ok (sprice:stockprice-equals actual expected)))))
 
 (deftest test-parser
   (testing "Parse stockprices"
-    (clet*
-      (parser::*feed* test-feed
-       items (parser:parse "YAR"))
-      (clet*
-        (tm (date 2024 12 24)
-          result (parser:cut-off items 3 tm)
-          lx (length result))
+    (let*
+      ((parser::*feed* test-feed)
+       (items (parser:parse "YAR")))
+      (let*
+        ((tm (date 2024 12 24))
+         (result (parser:cut-off items 3 tm))
+         (lx (length result)))
         (ok (= 62 lx)))
-      (clet*
-        (tm (date 2025 3 21)
-         result (parser:cut-off items 3 tm)
-         lx (length result))
+      (let*
+        ((tm (date 2025 3 21))
+         (result (parser:cut-off items 3 tm))
+         (lx (length result)))
         (ok (= 6 lx))
-        (ok (timestamp= march-28 (sprice:s-dx (aref result 0))))
-        (ok (timestamp= march-21 (sprice:s-dx (aref result (1- lx))))))
-      (clet*
-        (tm (date 2025 3 28)
-         result (parser:cut-off items 3 tm)
-         lx (length result))
+        (ok (lt:timestamp= march-28 (sprice:s-dx (aref result 0))))
+        (ok (lt:timestamp= march-21 (sprice:s-dx (aref result (1- lx))))))
+      (let*
+        ((tm (date 2025 3 28))
+         (result (parser:cut-off items 3 tm))
+         (lx (length result)))
         (ok (= 1 lx))
-        (ok (timestamp= march-28 (sprice:s-dx (aref result 0)))))
-      (clet*
-        (tm (date 2025 3 30)
-        result (parser:cut-off items 3 tm))
+        (ok (lt:timestamp= march-28 (sprice:s-dx (aref result 0)))))
+      (let*
+        ((tm (date 2025 3 30))
+         (result (parser:cut-off items 3 tm)))
         (ok (= 0 (length result))))))
   (testing "Parse no stockprices"
-    (clet*
-      (parser::*feed* test-feed
-       items (parser:parse "YARX"))
+    (let*
+      ((parser::*feed* test-feed)
+       (items (parser:parse "YARX")))
       (ok (null items)))))
 
 (defun create-tdx (ts)
-  (clet
-    (ht (make-hash-table :test 'equal)
-    pts (parse-timestring ts))
+  (let
+    ((ht (make-hash-table :test 'equal))
+     (pts (lt:parse-timestring ts)))
     (setf (gethash "YAR" ht) pts)
     (setf (gethash "ORK" ht) pts)
     ht))
 
 (defun create-tdx-nhy (ts)
-  (clet
-    (ht (make-hash-table :test 'equal)
-    pts (parse-timestring ts))
+  (let
+    ((ht (make-hash-table :test 'equal))
+     (pts (lt:parse-timestring ts)))
     (setf (gethash "NHY" ht) pts)
     ht))
 
@@ -187,26 +187,26 @@
 
 (deftest test-main
   (testing "process-ticker"
-    (clet*
-      (parser::*feed* test-feed)
-      (clet*
-        (tdx (create-tdx "2024-12-24")
-          result-yarx (ma::parse-ticker "YARX" tdx)
-          result-ork (ma::parse-ticker "ORK" tdx))
+    (let*
+      ((parser::*feed* test-feed))
+      (let*
+        ((tdx (create-tdx "2024-12-24"))
+         (result-yarx (ma::parse-ticker "YARX" tdx))
+         (result-ork (ma::parse-ticker "ORK" tdx)))
         (ok (equal (list :status :empty-dx) result-yarx))
         (ok (equal (list :status :missing-csv) result-ork)))
-      (clet*
-        (tdx-1 (create-tdx-nhy "2025-01-12")
-          result-1 (ma::parse-ticker "NHY" tdx-1))
+      (let*
+        ((tdx-1 (create-tdx-nhy "2025-01-12"))
+         (result-1 (ma::parse-ticker "NHY" tdx-1)))
         (ok (equal (getf result-1 :status) :empty-cutoffs)))
-      (clet*
-        (tdx-2 (create-tdx-nhy "2025-01-08")
-          result-2 (ma::parse-ticker "NHY" tdx-2))
+      (let*
+        ((tdx-2 (create-tdx-nhy "2025-01-08"))
+         (result-2 (ma::parse-ticker "NHY" tdx-2)))
         (ok (equal (getf result-2 :status) :ok))
         (ok (equal (length (getf result-2 :result)) 3)))
-      (clet*
-        (tdx-3 (create-tdx-nhy "2024-12-30")
-          result-3 (ma::parse-ticker "NHY" tdx-3))
+      (let*
+        ((tdx-3 (create-tdx-nhy "2024-12-30"))
+         (result-3 (ma::parse-ticker "NHY" tdx-3)))
         (ok (equal (getf result-3 :status) :start-date-error))))))
 
 (defun check-feed-status (ticker csv-result num-lines)
